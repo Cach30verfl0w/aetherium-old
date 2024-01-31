@@ -46,7 +46,7 @@ FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git 
 FetchContent_Populate(spdlog)
 
 target_include_directories(aetherium PUBLIC "${CMAKE_BINARY_DIR}/_deps/spdlog-src/include")
-target_include_directories(aetherium-static PRIVATE "${CMAKE_BINARY_DIR}/_deps/spdlog-src/include")
+target_include_directories(aetherium-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/spdlog-src/include")
 add_compile_definitions(SPDLOG_HEADER_ONLY)
 
 if(${CMX_BUILD_DEBUG})

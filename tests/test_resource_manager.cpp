@@ -18,6 +18,8 @@
 using namespace aetherium;
 
 TEST(aetherium_ResourceManager, test_resource_manager) {
+    spdlog::set_level(spdlog::level::debug);
+
     enum ResourceType {
         MAIN
     };

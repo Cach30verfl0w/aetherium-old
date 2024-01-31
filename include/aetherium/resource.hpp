@@ -20,6 +20,7 @@
 #include <kstd/streams/collectors.hpp>
 #include <kstd/streams/stream.hpp>
 #include <string>
+#include <spdlog/spdlog.h>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -72,9 +73,9 @@ namespace aetherium {
                 return kstd::Error {"Unable to add resource directory: Path doesn't exists or isn't a directory"s};
             }
 
-           // SPDLOG_DEBUG("Resource Manager: Including directory '{}' as resource directory, enumerating entries", directory);
+            SPDLOG_DEBUG("Resource Manager: Including directory '{}' as resource directory, enumerating entries", directory);
             for (const auto& resource_path : fs::directory_iterator(resource_directory_path)) {
-                //SPDLOG_DEBUG("Resource Manager: Registering path '{}' resource", resource_path.path().c_str());
+                SPDLOG_DEBUG("Resource Manager: Registering path '{}' resource", resource_path.path().c_str());
                 _registered_resources.emplace_back(type, resource_path);
             }
             _reload_paths.insert({type, resource_directory_path});
@@ -83,12 +84,12 @@ namespace aetherium {
 
         [[nodiscard]] auto reload_resources(const kstd::Option<RESOURCE_TYPE> type) noexcept -> kstd::Result<uint32_t> {
             if (type.has_value()) {
-                //SPDLOG_DEBUG("Resource Manager: Reloading all resource manager's resources");
+                SPDLOG_DEBUG("Resource Manager: Reloading all resource manager's resources");
                 std::remove_if(_registered_resources.begin(), _registered_resources.end(), [&](const auto& resource) {
                     return resource.get_resource_type() == type.get();
                 });
             } else {
-                //SPDLOG_DEBUG("Resource Manager: Reloading specific resources by type/category");
+                SPDLOG_DEBUG("Resource Manager: Reloading specific resources by type/category");
                 _registered_resources.clear();
             }
 
