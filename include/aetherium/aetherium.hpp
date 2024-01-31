@@ -14,22 +14,42 @@
 
 #pragma once
 #include <kstd/defaults.hpp>
+#include <kstd/result.hpp>
 #include <vulkan/vulkan_core.h>
 #include <fmt/format.h>
 #include <string>
 
-#define VK_CHECK(o, m) if (const auto result = (o); result != VK_SUCCESS) {                                            \
+#define VK_CHECK_EX(o, m) if (const auto result = (o); result != VK_SUCCESS) {                                         \
         throw std::runtime_error {fmt::format((m), vk_error_message(result))};                                         \
     }
 
+#define VK_CHECK(o, m) if (const auto result = (o); result != VK_SUCCESS) {                                            \
+        return kstd::Error {fmt::format((m), vk_error_message(result))};                                               \
+    }
+
 namespace aetherium {
+    class Device {
+        VkPhysicalDevice _vk_physical_device {};
+        VkDevice _vk_virtual_device {};
+        VkPhysicalDeviceProperties _device_properties {};
+
+        public:
+        Device() noexcept = default;
+        ~Device() noexcept;
+        KSTD_NO_COPY(Device, Device);
+        KSTD_DEFAULT_MOVE(Device, Device);
+
+        auto initialize(VkPhysicalDevice device) noexcept -> kstd::Result<void>;
+        [[nodiscard]] auto get_name() const noexcept -> std::string;
+    };
+
     class Application {
         VkInstance _vulkan_instance {};
-        VkPhysicalDevice _vulkan_physical_device {};
-        VkDevice _vulkan_logical_device {};
+        Device _vulkan_device;
 
         public:
         Application(const std::string& name, uint32_t version);
+        ~Application() noexcept;
         KSTD_NO_MOVE_COPY(Application, Application);
     };
 

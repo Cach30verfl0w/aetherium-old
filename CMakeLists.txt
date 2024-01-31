@@ -11,6 +11,7 @@ cmx_include_scripts()
 include(cmx-glm)
 include(cmx-kstd-core)
 include(cmx-fmt)
+include(cmx-kstd-streams)
 
 # Shared Library
 cmx_add_library(aetherium SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -18,6 +19,7 @@ target_include_directories(aetherium PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include
 target_link_libraries(aetherium PUBLIC Vulkan::Vulkan)
 cmx_include_glm(aetherium PUBLIC)
 cmx_include_kstd_core(aetherium PUBLIC)
+cmx_include_kstd_streams(aetherium PUBLIC)
 cmx_include_fmt(aetherium PUBLIC)
 
 cmx_add_library(aetherium-static STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -25,10 +27,31 @@ target_include_directories(aetherium-static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(aetherium-static PRIVATE Vulkan::Vulkan)
 cmx_include_glm(aetherium-static PRIVATE)
 cmx_include_kstd_core(aetherium-static PRIVATE)
+cmx_include_kstd_streams(aetherium-static PUBLIC)
 cmx_include_fmt(aetherium-static PRIVATE)
 
 # Unit testing
 cmx_add_tests(aetherium-tests "${CMAKE_CURRENT_SOURCE_DIR}/test")
 target_link_libraries(aetherium-tests PRIVATE aetherium-static)
 add_dependencies(aetherium-tests aetherium-static)
-cmx_include_kstd_core(aetherium-tests PRIVATE)
+cmx_include_kstd_core(aetherium-tests)
+
+# Pull in spdlog
+set(SPDLOG_BUILD_EXAMPLE OFF)
+set(SPDLOG_FMT_EXTERNAL ON)
+set(SPDLOG_FMT_EXTERNAL_HO ON)
+set(SPDLOG_NO_EXCEPTIONS ON)
+
+FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.x)
+FetchContent_Populate(spdlog)
+
+target_include_directories(aetherium PUBLIC "${CMAKE_BINARY_DIR}/_deps/spdlog-src/include")
+target_include_directories(aetherium-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/spdlog-src/include")
+add_compile_definitions(SPDLOG_HEADER_ONLY)
+
+if(${CMX_BUILD_DEBUG})
+    message(STATUS "Verbose logging is enabled in debug build")
+    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+else()
+    add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
+endif()
