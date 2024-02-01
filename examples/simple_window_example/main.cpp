@@ -19,7 +19,7 @@ using namespace aetherium;
 
 auto main() -> int {
     auto window = Window {"Example Window"};
-    auto context = renderer::VulkanContext {"Test application", VK_MAKE_VERSION(1, 0, 0)};
+    auto context = renderer::VulkanContext {window, "Test application", VK_MAKE_VERSION(1, 0, 0)};
     auto device = context.find_device(renderer::DeviceSearchStrategy::HIGHEST_PERFORMANCE);
     printf("Selected device: %s\n", device->get_name().c_str());
 

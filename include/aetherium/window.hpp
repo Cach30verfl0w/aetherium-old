@@ -22,9 +22,9 @@
 namespace aetherium {
     class Window final {
         SDL_Window* _window_handle {};
-        SDL_Surface* _screen_surface {};
 
         public:
+
         explicit Window(std::string_view window_title, int32_t width = 800, int32_t height = 600);
         Window(const Window& other) = delete;
         Window(Window&& other) noexcept;
@@ -32,5 +32,6 @@ namespace aetherium {
 
         [[nodiscard]] auto handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void>;
         [[nodiscard]] auto run_loop() const noexcept -> kstd::Result<void>;
+        [[nodiscard]] auto get_window_handle() const noexcept -> SDL_Window*;
     };
 }// namespace aetherium

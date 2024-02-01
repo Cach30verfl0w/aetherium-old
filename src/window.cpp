@@ -21,11 +21,7 @@ namespace aetherium {
             throw std::runtime_error {fmt::format("Unable to initialize SDL window: {}", SDL_GetError())};
         }
         _window_handle = SDL_CreateWindow(window_title.data(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width,
-                                          height, SDL_WINDOW_SHOWN);
-
-        _screen_surface = SDL_GetWindowSurface(_window_handle);
-        SDL_FillRect(_screen_surface, nullptr, SDL_MapRGB(_screen_surface->format, 0x00, 0x00, 0x00));
-        SDL_UpdateWindowSurface(_window_handle);
+                                          height, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
     }
 
     Window::Window(aetherium::Window&& other) noexcept ://NOLINT
@@ -46,7 +42,6 @@ namespace aetherium {
         switch(event->type) {
             default: return {};
         }
-        return {};
     }
 
     auto Window::run_loop() const noexcept -> kstd::Result<void> {
@@ -64,5 +59,9 @@ namespace aetherium {
                 }
             }
         }
+    }
+
+    auto Window::get_window_handle() const noexcept -> SDL_Window* {
+        return _window_handle;
     }
 }// namespace aetherium

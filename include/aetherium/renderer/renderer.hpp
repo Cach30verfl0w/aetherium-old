@@ -20,6 +20,8 @@
 #include <kstd/streams/stream.hpp>
 #include <string>
 #include <vulkan/vulkan_core.h>
+#include <SDL2/SDL_vulkan.h>
+#include "aetherium/window.hpp"
 
 #define VK_CHECK_EX(x, m)                                                                                              \
     if(const auto result = (x); result != VK_SUCCESS) {                                                                \
@@ -105,7 +107,7 @@ namespace aetherium::renderer {
          * @since         01/02/2024
          * @author        Cedric Hammes
          */
-        VulkanContext(std::string_view name, uint32_t version);
+        VulkanContext(const Window& window, std::string_view name, uint32_t version);
 
         VulkanContext(VulkanContext&& device) noexcept;
         ~VulkanContext() noexcept;

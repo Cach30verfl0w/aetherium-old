@@ -45,20 +45,15 @@ namespace aetherium::renderer {
             return get_device_local_heap(left) < get_device_local_heap(right);
         };
 
-#if BUILD_DEBUG
-        constexpr std::array validation_layers {"VK_LAYER_KHRONOS_validation"};
-
-        constexpr std::array debug_extensions {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
-#else
-        constexpr auto validation_layers = std::array<const char*, 0> {};
-        constexpr auto debug_extensions = std::array<const char*, 0> {};
-#endif
     }// namespace
 
     VulkanDevice::VulkanDevice(const VkPhysicalDevice physical_device) :// NOLINT
             _physical_device {physical_device} {
         vkGetPhysicalDeviceProperties(physical_device, &_properties);
         constexpr std::array properties {1.0f};
+        constexpr std::array device_extensions {
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
 
         VkDeviceQueueCreateInfo device_queue_create_info {};
         device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -69,7 +64,8 @@ namespace aetherium::renderer {
         VkDeviceCreateInfo device_create_info {};
         device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         device_create_info.enabledLayerCount = 0;
-        device_create_info.enabledExtensionCount = 0;
+        device_create_info.enabledExtensionCount = device_extensions.size();
+        device_create_info.ppEnabledExtensionNames = device_extensions.data();
         device_create_info.pQueueCreateInfos = &device_queue_create_info;
         device_create_info.queueCreateInfoCount = 1;
         VK_CHECK_EX(vkCreateDevice(physical_device, &device_create_info, nullptr, &_virtual_device),
@@ -104,7 +100,31 @@ namespace aetherium::renderer {
         return *this;
     }
 
-    VulkanContext::VulkanContext(const std::string_view name, const uint32_t version) {
+    VulkanContext::VulkanContext(const Window& window, const std::string_view name, const uint32_t version) {
+        using namespace std::string_literals;
+#if BUILD_DEBUG
+        constexpr std::array validation_layers {"VK_LAYER_KHRONOS_validation"};
+#else
+        constexpr auto validation_layers = std::array<const char*, 0> {};
+#endif
+
+        // Get SDL window extensions
+        uint32_t window_ext_count = 0;
+        if (!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, nullptr)) {
+            throw std::runtime_error {"Unable to create app: Unable to get instance extension count"s};
+        }
+
+        auto extensions = std::vector<const char*> {window_ext_count};
+        if (!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
+            throw std::runtime_error {"Unable to create app: Unable to get instance extension names"s};
+        }
+
+#ifdef BUILD_DEBUG
+        // Add debug extension if debug build
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+
+        // Create Vulkan instance
         VkApplicationInfo application_info {};
         application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         application_info.pApplicationName = name.data();
@@ -116,12 +136,13 @@ namespace aetherium::renderer {
         VkInstanceCreateInfo instance_create_info {};
         instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instance_create_info.pApplicationInfo = &application_info;
-        instance_create_info.enabledExtensionCount = debug_extensions.size();
-        instance_create_info.ppEnabledExtensionNames = debug_extensions.data();
+        instance_create_info.enabledExtensionCount = extensions.size();
+        instance_create_info.ppEnabledExtensionNames = extensions.data();
         instance_create_info.enabledLayerCount = validation_layers.size();
         instance_create_info.ppEnabledLayerNames = validation_layers.data();
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_vk_instance), "Unable to create app: {}")
 
+        // Create debug utils messenger
 #if BUILD_DEBUG
         VkDebugUtilsMessengerCreateInfoEXT debug_utils_info {};
         debug_utils_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
