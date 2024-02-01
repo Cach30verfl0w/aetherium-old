@@ -28,21 +28,52 @@
 namespace fs = std::filesystem;
 
 namespace aetherium {
+    /**
+     * The resource identifies a single resource, managed by the resource manager itself. These resources are used by
+     * the resource manager as a container of the type and path together, so the manager can identify the resource by
+     * these values.
+     *
+     * @tparam RESOURCE_TYPE Enum type used for the identification of the resource group
+     */
     template<typename RESOURCE_TYPE>
     class Resource final {
+        static_assert(std::is_enum_v<RESOURCE_TYPE>, "Resource Type is not enum type");
+
         RESOURCE_TYPE _resource_type;
         fs::path _resource_path;
 
         public:
+        /**
+         * This constructor creates the resource by the specified data
+         *
+         * @param resource_type The type of the resource
+         * @param resource_path The path to the resource
+         * @since               01/02/2024
+         * @author              Cedric Hammes
+         */
         Resource(RESOURCE_TYPE resource_type, fs::path resource_path) noexcept :
                 _resource_type {resource_type},
                 _resource_path {std::move(resource_path)}
         {}
 
+        /**
+         * This function returns th type of the resource.
+         *
+         * @return The type of the resource
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         [[nodiscard]] inline auto get_resource_type() const noexcept -> RESOURCE_TYPE {
             return _resource_type;
         }
 
+        /**
+         * This function returns a pointer to the resource path of the resource.
+         *
+         * @return The pointer to the resource path
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         [[nodiscard]] inline auto get_resource_path() const noexcept -> const fs::path* {
             return &_resource_path;
         }
@@ -62,16 +93,20 @@ namespace aetherium {
      * developer to add directories into a resource group and load the single resources with a factory.
      *
      * @tparam RESOURCE_TYPE Enum type used for the identification of resource groups/categories
-     * @since  01/02/2024
-     * @author Cedric Hammes
+     * @since                01/02/2024
+     * @author               Cedric Hammes
      */
     template<typename RESOURCE_TYPE>
     class ResourceManager final {
         static_assert(std::is_enum_v<RESOURCE_TYPE>, "Resource Type is not enum type");
+
         std::vector<Resource<RESOURCE_TYPE>> _registered_resources {};
         std::unordered_map<RESOURCE_TYPE, fs::path> _reload_paths {};
 
         public:
+        /**
+         * This constructor creates the resource manager with the default (empty) values
+         */
         ResourceManager() noexcept = default;
 
         /**
@@ -82,8 +117,8 @@ namespace aetherium {
          * @param directory The path to the resource directory of the resource group
          * @return          The result to validate the success of this operation and perform error handling
          *
-         * @since  01/02/2024
-         * @author Cedric Hammes
+         * @since           01/02/2024
+         * @author          Cedric Hammes
          */
         [[nodiscard]] auto add_directory(const RESOURCE_TYPE type, const std::string_view directory) noexcept -> kstd::Result<void> {
             using namespace std::string_literals;
@@ -109,8 +144,8 @@ namespace aetherium {
          * @param type The optional resource group to reload
          * @return     The result to validate the success of this operation and perform error handling
          *
-         * @since  01/02/2024
-         * @author Cedric Hammes
+         * @since      01/02/2024
+         * @author     Cedric Hammes
          */
         [[nodiscard]] auto reload_resources(const kstd::Option<RESOURCE_TYPE> type) noexcept -> kstd::Result<uint32_t> {
             if (type.has_value()) {
@@ -141,8 +176,8 @@ namespace aetherium {
          * @param factory The factory function as parameter
          * @return        The list of all created resources or an error
          *
-         * @since  01/02/2024
-         * @author Cedric Hammes
+         * @since         01/02/2024
+         * @author        Cedric Hammes
          */
         template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
         [[nodiscard]] auto load_resources(F&& factory) noexcept -> kstd::Result<std::vector<FR>> {
@@ -174,8 +209,8 @@ namespace aetherium {
          * @param factory The factory function as parameter
          * @return        The list of all created resources or an error
          *
-         * @since  01/02/2024
-         * @author Cedric Hammes
+         * @since         01/02/2024
+         * @author        Cedric Hammes
          */
         template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
         [[nodiscard]] auto load_resource(std::string_view name, F&& factory) noexcept -> kstd::Result<FR> {
