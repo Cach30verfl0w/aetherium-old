@@ -19,8 +19,8 @@
 #include <kstd/result.hpp>
 #include <kstd/streams/collectors.hpp>
 #include <kstd/streams/stream.hpp>
-#include <string>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -55,8 +55,8 @@ namespace aetherium {
          */
         Resource(RESOURCE_TYPE resource_type, fs::path resource_path) noexcept :
                 _resource_type {resource_type},
-                _resource_path {std::move(resource_path)}
-        {}
+                _resource_path {std::move(resource_path)} {
+        }
 
         /**
          * This function returns th type of the resource.
@@ -122,15 +122,17 @@ namespace aetherium {
          * @since           01/02/2024
          * @author          Cedric Hammes
          */
-        [[nodiscard]] auto add_directory(const RESOURCE_TYPE type, const std::string_view directory) noexcept -> kstd::Result<void> {
+        [[nodiscard]] auto add_directory(const RESOURCE_TYPE type, const std::string_view directory) noexcept
+                -> kstd::Result<void> {
             using namespace std::string_literals;
             const auto resource_directory_path = fs::path {directory};
-            if (!(fs::exists(resource_directory_path) || fs::is_directory(resource_directory_path))) {
+            if(!(fs::exists(resource_directory_path) || fs::is_directory(resource_directory_path))) {
                 return kstd::Error {"Unable to add resource directory: Path doesn't exists or isn't a directory"s};
             }
 
-            SPDLOG_DEBUG("Resource Manager: Including directory '{}' as resource directory, enumerating entries", directory);
-            for (const auto& resource_path : fs::directory_iterator(resource_directory_path)) {
+            SPDLOG_DEBUG("Resource Manager: Including directory '{}' as resource directory, enumerating entries",
+                         directory);
+            for(const auto& resource_path : fs::directory_iterator(resource_directory_path)) {
                 SPDLOG_DEBUG("Resource Manager: Registering path '{}' resource", resource_path.path().c_str());
                 _registered_resources.emplace_back(type, resource_path);
             }
@@ -150,18 +152,21 @@ namespace aetherium {
          * @author     Cedric Hammes
          */
         [[nodiscard]] auto reload_resources(const kstd::Option<RESOURCE_TYPE> type) noexcept -> kstd::Result<uint32_t> {
-            if (type.has_value()) {
+            if(type.has_value()) {
                 SPDLOG_DEBUG("Resource Manager: Reloading all resource manager's resources");
                 std::remove_if(_registered_resources.begin(), _registered_resources.end(), [&](const auto& resource) {
                     return resource.get_resource_type() == type.get();
                 });
-            } else {
+            }
+            else {
                 SPDLOG_DEBUG("Resource Manager: Reloading specific resources by type/category");
                 _registered_resources.clear();
             }
 
             for(const auto& [resource_dir_type, resource_directory] : _reload_paths) {
-                if (type.map([&](const auto value) { return value == type; }).get_or(true))
+                if(type.map([&](const auto value) {
+                           return value == type;
+                       }).get_or(true))
                     continue;
 
                 add_directory(type, resource_directory);
@@ -187,12 +192,12 @@ namespace aetherium {
                           "Factory signature does not match");
             using namespace std::string_literals;
             std::vector<FR> resource_list {};
-            for (const auto& resource : _registered_resources) {
-                if (resource.get_resource_type() != TYPE)
+            for(const auto& resource : _registered_resources) {
+                if(resource.get_resource_type() != TYPE)
                     continue;
 
                 const kstd::Result<FR> result = factory(resource);
-                if (result.is_error()) {
+                if(result.is_error()) {
                     return kstd::Error {result.get_error()};
                 }
 
@@ -221,17 +226,17 @@ namespace aetherium {
             using namespace std::string_literals;
 
             const auto opt_result_value = kstd::streams::stream(_registered_resources)
-                    .filter([&](auto& resource) {
-                        return resource.get_resource_type() == TYPE && resource.get_resource_path()->filename() == name;
-                    })
-                    .map(factory)
-                    .find_any();
-            if (opt_result_value.is_empty()) {
-                return kstd::Error { fmt::format("Resource Manager: No resource named '{}' found", name) };
+                                                  .filter([&](auto& resource) {
+                                                      return resource.get_resource_type() == TYPE &&
+                                                             resource.get_resource_path()->filename() == name;
+                                                  })
+                                                  .map(factory)
+                                                  .find_any();
+            if(opt_result_value.is_empty()) {
+                return kstd::Error {fmt::format("Resource Manager: No resource named '{}' found", name)};
             }
 
             return opt_result_value.get();
         }
-
     };
-}
+}// namespace aetherium

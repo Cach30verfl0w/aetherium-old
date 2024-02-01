@@ -13,11 +13,11 @@
 // limitations under the License.
 
 #pragma once
-#include <stdexcept>
 #include <SDL2/SDL.h>
 #include <fmt/format.h>
-#include <kstd/result.hpp>
 #include <kstd/defaults.hpp>
+#include <kstd/result.hpp>
+#include <stdexcept>
 
 namespace aetherium {
     // This is a
@@ -34,4 +34,4 @@ namespace aetherium {
         [[nodiscard]] auto handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void>;
         [[nodiscard]] auto run_loop() const noexcept -> kstd::Result<void>;
     };
-}
+}// namespace aetherium

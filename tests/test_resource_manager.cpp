@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gtest/gtest.h>
 #include <aetherium/resource.hpp>
+#include <gtest/gtest.h>
 
 using namespace aetherium;
 
@@ -26,8 +26,8 @@ TEST(aetherium_ResourceManager, test_load_resource) {
 
     ResourceManager<ResourceType> resource_manager {};
     resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
-    const auto text = resource_manager.load_resource<ResourceType::MAIN>("resource.txt", read_string_factory)
-                              .get_or_throw();
+    const auto text =
+            resource_manager.load_resource<ResourceType::MAIN>("resource.txt", read_string_factory).get_or_throw();
     ASSERT_EQ(text, "This is a test text");
 }
 
@@ -40,8 +40,7 @@ TEST(aetherium_ResourceManager, test_load_resources) {
 
     ResourceManager<ResourceType> resource_manager {};
     resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
-    const auto resources = resource_manager.load_resources<ResourceType::MAIN>(read_string_factory)
-            .get_or_throw();
+    const auto resources = resource_manager.load_resources<ResourceType::MAIN>(read_string_factory).get_or_throw();
     ASSERT_EQ(resources.size(), 1);
     ASSERT_EQ(resources.at(0), "This is a test text");
 }

@@ -17,11 +17,11 @@
 namespace aetherium {
     Window::Window(std::string_view window_title, int32_t width, const int32_t height) {
         // Initialize window handle
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
+        if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
             throw std::runtime_error {fmt::format("Unable to initialize SDL window: {}", SDL_GetError())};
         }
-        _window_handle = SDL_CreateWindow(window_title.data(), SDL_WINDOWPOS_UNDEFINED,
-                                          SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN);
+        _window_handle = SDL_CreateWindow(window_title.data(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width,
+                                          height, SDL_WINDOW_SHOWN);
 
         _screen_surface = SDL_GetWindowSurface(_window_handle);
         SDL_FillRect(_screen_surface, nullptr, SDL_MapRGB(_screen_surface->format, 0x00, 0x00, 0x00));
@@ -34,7 +34,7 @@ namespace aetherium {
     }
 
     Window::~Window() noexcept {
-        if (_window_handle == nullptr) {
+        if(_window_handle == nullptr) {
             return;
         }
 
@@ -43,7 +43,7 @@ namespace aetherium {
     }
 
     auto Window::handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void> {
-        switch (event->type) {
+        switch(event->type) {
             default: return {};
         }
         return {};
@@ -51,10 +51,10 @@ namespace aetherium {
 
     auto Window::run_loop() const noexcept -> kstd::Result<void> {
         SDL_Event event {};
-        while (true) {
+        while(true) {
             // Wait for event
             while(SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
+                if(event.type == SDL_QUIT) {
                     return {};
                 }
 
@@ -65,4 +65,4 @@ namespace aetherium {
             }
         }
     }
-}
+}// namespace aetherium
