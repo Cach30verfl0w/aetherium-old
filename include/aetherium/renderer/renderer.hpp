@@ -15,11 +15,11 @@
 #pragma once
 #include <fmt/format.h>
 #include <kstd/result.hpp>
+#include <kstd/safe_alloc.hpp>
+#include <kstd/streams/collectors.hpp>
+#include <kstd/streams/stream.hpp>
 #include <string>
 #include <vulkan/vulkan_core.h>
-#include <kstd/safe_alloc.hpp>
-#include <kstd/streams/stream.hpp>
-#include <kstd/streams/collectors.hpp>
 
 #define VK_CHECK_EX(x, m)                                                                                              \
     if(const auto result = (x); result != VK_SUCCESS) {                                                                \
@@ -65,8 +65,7 @@ namespace aetherium::renderer {
         ~VulkanContext() noexcept;
         KSTD_NO_COPY(VulkanContext, VulkanContext);
 
-        [[nodiscard]] auto find_device(DeviceSearchStrategy strategy) const noexcept
-                -> kstd::Result<VulkanDevice>;
+        [[nodiscard]] auto find_device(DeviceSearchStrategy strategy) const noexcept -> kstd::Result<VulkanDevice>;
 
         auto operator=(VulkanContext&& other) noexcept -> VulkanContext&;
     };
