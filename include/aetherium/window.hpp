@@ -20,7 +20,6 @@
 #include <stdexcept>
 
 namespace aetherium {
-    // This is a
     class Window final {
         SDL_Window* _window_handle {};
         SDL_Surface* _screen_surface {};
