@@ -57,6 +57,14 @@ namespace aetherium {
         return std::string {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
     };
 
+    /**
+     * The resource manager is an implementation of a central management of resource files at runtime. This allows the
+     * developer to add directories into a resource group and load the single resources with a factory.
+     *
+     * @tparam RESOURCE_TYPE Enum type used for the identification of resource groups/categories
+     * @since  01/02/2024
+     * @author Cedric Hammes
+     */
     template<typename RESOURCE_TYPE>
     class ResourceManager final {
         static_assert(std::is_enum_v<RESOURCE_TYPE>, "Resource Type is not enum type");
@@ -66,6 +74,17 @@ namespace aetherium {
         public:
         ResourceManager() noexcept = default;
 
+        /**
+         * This function allows the developer to add the specified directory into the specified resource group. So the
+         * resource manager can index the files and reload the groups at reload.
+         *
+         * @param type      The resource group of the specified resource directory
+         * @param directory The path to the resource directory of the resource group
+         * @return          The result to validate the success of this operation and perform error handling
+         *
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         [[nodiscard]] auto add_directory(const RESOURCE_TYPE type, const std::string_view directory) noexcept -> kstd::Result<void> {
             using namespace std::string_literals;
             const auto resource_directory_path = fs::path {directory};
@@ -82,6 +101,17 @@ namespace aetherium {
             return {};
         }
 
+        /**
+         * This function allows the developer to reload the resource manager for a specific resource group or all
+         * registered resource groups. This mechanic re-enumerates all registered directories and add the files
+         * into it.
+         *
+         * @param type The optional resource group to reload
+         * @return     The result to validate the success of this operation and perform error handling
+         *
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         [[nodiscard]] auto reload_resources(const kstd::Option<RESOURCE_TYPE> type) noexcept -> kstd::Result<uint32_t> {
             if (type.has_value()) {
                 SPDLOG_DEBUG("Resource Manager: Reloading all resource manager's resources");
@@ -102,6 +132,18 @@ namespace aetherium {
             return {};
         }
 
+        /**
+         * This function enumerates and loads all resources by the specified group.
+         *
+         * @tparam TYPE   The type of the resource group
+         * @tparam F      The type of the factory function
+         * @tparam FR     The return type of the factory function
+         * @param factory The factory function as parameter
+         * @return        The list of all created resources or an error
+         *
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
         [[nodiscard]] auto load_resources(F&& factory) noexcept -> kstd::Result<std::vector<FR>> {
             static_assert(std::is_convertible_v<F, std::function<kstd::Result<FR>(Resource<RESOURCE_TYPE>&)>>,
@@ -122,6 +164,19 @@ namespace aetherium {
             return resource_list;
         }
 
+        /**
+         * This function enumerates and loads the specified resource by the name in the group.
+         *
+         * @tparam TYPE   The type of the resource group
+         * @tparam F      The type of the factory function
+         * @tparam FR     The return type of the factory function
+         * @param name    The name of the wanted resource
+         * @param factory The factory function as parameter
+         * @return        The list of all created resources or an error
+         *
+         * @since  01/02/2024
+         * @author Cedric Hammes
+         */
         template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
         [[nodiscard]] auto load_resource(std::string_view name, F&& factory) noexcept -> kstd::Result<FR> {
             static_assert(std::is_convertible_v<F, std::function<kstd::Result<FR>(Resource<RESOURCE_TYPE>&)>>,
