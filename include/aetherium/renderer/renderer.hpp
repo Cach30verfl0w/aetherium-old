@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #pragma once
+#include "aetherium/window.hpp"
+#include <SDL2/SDL_vulkan.h>
 #include <fmt/format.h>
 #include <kstd/result.hpp>
 #include <kstd/safe_alloc.hpp>
@@ -20,8 +22,6 @@
 #include <kstd/streams/stream.hpp>
 #include <string>
 #include <vulkan/vulkan_core.h>
-#include <SDL2/SDL_vulkan.h>
-#include "aetherium/window.hpp"
 
 #define VK_CHECK_EX(x, m)                                                                                              \
     if(const auto result = (x); result != VK_SUCCESS) {                                                                \
@@ -34,6 +34,8 @@
     }
 
 namespace aetherium::renderer {
+    class VulkanContext;
+
     /**
      * This enum identifies the strategy of the device acquire function. The user can acquire the least or most
      * performant device.
@@ -57,6 +59,7 @@ namespace aetherium::renderer {
         VkPhysicalDevice _physical_device {};
         VkDevice _virtual_device {};
         VkPhysicalDeviceProperties _properties {};
+        const VulkanContext* _vulkan_context;
 
         public:
         /**
@@ -66,7 +69,7 @@ namespace aetherium::renderer {
          * @since        01/02/2024
          * @author       Cedric Hammes
          */
-        explicit VulkanDevice(VkPhysicalDevice device);
+        explicit VulkanDevice(const VulkanContext* vulkan_context, VkPhysicalDevice device);
 
         VulkanDevice(VulkanDevice&& device) noexcept;
         ~VulkanDevice() noexcept;
@@ -80,6 +83,18 @@ namespace aetherium::renderer {
          * @author Cedric Hammes
          */
         [[nodiscard]] auto get_name() const noexcept -> std::string;
+
+        /**
+         * This function enumerates all heap types, which are available on this graphics card.
+         *
+         * @param type_filter The type filter
+         * @param properties  The memory properties
+         * @return            The memory type index
+         * @since             01/02/2024
+         * @author            Cedric Hammes
+         */
+        [[nodiscard]] auto get_memory_type_index(uint32_t type_filter, VkMemoryPropertyFlags properties) const noexcept
+                -> kstd::Option<uint32_t>;
 
         auto operator=(VulkanDevice&& other) noexcept -> VulkanDevice&;
     };

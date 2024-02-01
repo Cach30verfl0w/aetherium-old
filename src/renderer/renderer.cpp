@@ -47,13 +47,12 @@ namespace aetherium::renderer {
 
     }// namespace
 
-    VulkanDevice::VulkanDevice(const VkPhysicalDevice physical_device) :// NOLINT
-            _physical_device {physical_device} {
+    VulkanDevice::VulkanDevice(const VulkanContext* vulkan_context, const VkPhysicalDevice physical_device) :// NOLINT
+            _physical_device {physical_device},
+            _vulkan_context {vulkan_context} {
         vkGetPhysicalDeviceProperties(physical_device, &_properties);
         constexpr std::array properties {1.0f};
-        constexpr std::array device_extensions {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
+        constexpr std::array device_extensions {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
         VkDeviceQueueCreateInfo device_queue_create_info {};
         device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -75,8 +74,10 @@ namespace aetherium::renderer {
     VulkanDevice::VulkanDevice(VulkanDevice&& device) noexcept :// NOLINT
             _physical_device {device._physical_device},
             _virtual_device {device._virtual_device},
-            _properties {device._properties} {
+            _properties {device._properties},
+            _vulkan_context {device._vulkan_context} {
         device._virtual_device = nullptr;
+        device._vulkan_context = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
@@ -100,6 +101,19 @@ namespace aetherium::renderer {
         return *this;
     }
 
+    auto VulkanDevice::get_memory_type_index(uint32_t type_filter, VkMemoryPropertyFlags properties) const noexcept
+            -> kstd::Option<uint32_t> {
+        VkPhysicalDeviceMemoryProperties memory_properties {};
+        vkGetPhysicalDeviceMemoryProperties(_physical_device, &memory_properties);
+        for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
+            const auto memory_type = memory_properties.memoryTypes[i];
+            if ((type_filter & (1 << i)) == 1 && (memory_type.propertyFlags & properties) == properties) {
+                return i;
+            }
+        }
+        return {};
+    }
+
     VulkanContext::VulkanContext(const Window& window, const std::string_view name, const uint32_t version) {
         using namespace std::string_literals;
 #if BUILD_DEBUG
@@ -110,12 +124,12 @@ namespace aetherium::renderer {
 
         // Get SDL window extensions
         uint32_t window_ext_count = 0;
-        if (!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, nullptr)) {
+        if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, nullptr)) {
             throw std::runtime_error {"Unable to create app: Unable to get instance extension count"s};
         }
 
         auto extensions = std::vector<const char*> {window_ext_count};
-        if (!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
+        if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
             throw std::runtime_error {"Unable to create app: Unable to get instance extension names"s};
         }
 
@@ -208,7 +222,7 @@ namespace aetherium::renderer {
             case DeviceSearchStrategy::LOWEST_PERFORMANCE:
                 physical_device = sorted_devices.at(sorted_devices.size() - 1);
         }
-        return kstd::try_construct<VulkanDevice>(physical_device);
+        return kstd::try_construct<VulkanDevice>(this, physical_device);
     }
 
     auto VulkanContext::operator=(aetherium::renderer::VulkanContext&& other) noexcept -> VulkanContext& {
@@ -227,6 +241,8 @@ namespace aetherium::renderer {
             case VK_ERROR_DEVICE_LOST: return "Device lost";
             case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "Out of device memory";
             case VK_ERROR_OUT_OF_HOST_MEMORY: return "Out of host memory";
+            case VK_ERROR_INITIALIZATION_FAILED: return "Initialization failed";
+            case VK_ERROR_FORMAT_NOT_SUPPORTED: return "Unsupported format";
             default: return "Unknown";
         }
     }

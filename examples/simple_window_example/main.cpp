@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/window.hpp>
 #include <aetherium/renderer/renderer.hpp>
+#include <aetherium/window.hpp>
 
 using namespace aetherium;
 
