@@ -34,6 +34,8 @@ namespace aetherium {
      * these values.
      *
      * @tparam RESOURCE_TYPE Enum type used for the identification of the resource group
+     * @since               01/02/2024
+     * @author              Cedric Hammes
      */
     template<typename RESOURCE_TYPE>
     class Resource final {
