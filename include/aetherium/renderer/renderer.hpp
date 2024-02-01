@@ -55,6 +55,9 @@ namespace aetherium::renderer {
 
     class VulkanContext {
         VkInstance _vk_instance {};
+#ifdef BUILD_DEBUG
+        VkDebugUtilsMessengerEXT _debug_utils_messenger {};
+#endif
 
         public:
         VulkanContext(std::string_view name, uint32_t version);

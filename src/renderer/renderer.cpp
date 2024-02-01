@@ -21,19 +21,39 @@ namespace aetherium::renderer {
             vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
 
             uint32_t heap_size = 0;
-            for (uint32_t i = 0; i < properties.memoryHeapCount; i++) {
+            for(uint32_t i = 0; i < properties.memoryHeapCount; i++) {
                 const auto memory_heap = properties.memoryHeaps[i];
-                if ((memory_heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+                if((memory_heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
                     continue;
                 heap_size += memory_heap.size;
             }
             return heap_size;
         }
 
+#ifdef BUILD_DEBUG
+        VKAPI_ATTR auto VKAPI_CALL debug_utils_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                                        VkDebugUtilsMessageTypeFlagsEXT message_types,
+                                                        const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+                                                        void* user_data) -> VkBool32 {
+            // TODO: Debug Callback
+            printf("%s\n", callback_data->pMessage);
+            return VK_FALSE;
+        }
+#endif
+
         constexpr auto device_heap_comparator = [](const auto& left, const auto& right) -> bool {
             return get_device_local_heap(left) < get_device_local_heap(right);
         };
-    }
+
+#if BUILD_DEBUG
+        constexpr std::array validation_layers {"VK_LAYER_KHRONOS_validation"};
+
+        constexpr std::array debug_extensions {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
+#else
+        constexpr auto validation_layers = std::array<const char*, 0> {};
+        constexpr auto debug_extensions = std::array<const char*, 0> {};
+#endif
+    }// namespace
 
     VulkanDevice::VulkanDevice(const VkPhysicalDevice physical_device) :// NOLINT
             _physical_device {physical_device} {
@@ -57,15 +77,14 @@ namespace aetherium::renderer {
     }
 
     VulkanDevice::VulkanDevice(VulkanDevice&& device) noexcept :// NOLINT
-            _physical_device{device._physical_device},
-            _virtual_device{device._virtual_device},
-            _properties{device._properties}
-    {
+            _physical_device {device._physical_device},
+            _virtual_device {device._virtual_device},
+            _properties {device._properties} {
         device._virtual_device = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
-        if (_virtual_device == nullptr) {
+        if(_virtual_device == nullptr) {
             return;
         }
 
@@ -74,7 +93,7 @@ namespace aetherium::renderer {
     }
 
     auto VulkanDevice::get_name() const noexcept -> std::string {
-        return std::string{_properties.deviceName};
+        return std::string {_properties.deviceName};
     }
 
     auto VulkanDevice::operator=(VulkanDevice&& other) noexcept -> VulkanDevice& {
@@ -94,34 +113,63 @@ namespace aetherium::renderer {
         application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         application_info.apiVersion = VK_API_VERSION_1_3;
 
-        std::vector layers = {
-                "VK_LAYER_KHRONOS_validation"
-        };
         VkInstanceCreateInfo instance_create_info {};
         instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instance_create_info.pApplicationInfo = &application_info;
-        instance_create_info.enabledExtensionCount = 0;
-        instance_create_info.enabledLayerCount = layers.size();
-        instance_create_info.ppEnabledLayerNames = layers.data();
+        instance_create_info.enabledExtensionCount = debug_extensions.size();
+        instance_create_info.ppEnabledExtensionNames = debug_extensions.data();
+        instance_create_info.enabledLayerCount = validation_layers.size();
+        instance_create_info.ppEnabledLayerNames = validation_layers.data();
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_vk_instance), "Unable to create app: {}")
+
+#if BUILD_DEBUG
+        VkDebugUtilsMessengerCreateInfoEXT debug_utils_info {};
+        debug_utils_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debug_utils_info.messageSeverity =
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debug_utils_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+        debug_utils_info.pfnUserCallback = debug_utils_callback;
+
+        const auto create_debug_utils_messenger = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+                vkGetInstanceProcAddr(_vk_instance, "vkCreateDebugUtilsMessengerEXT"));
+        // clang-format off
+        VK_CHECK_EX(
+                create_debug_utils_messenger(_vk_instance, &debug_utils_info, nullptr, &_debug_utils_messenger),
+                "Unable to create app: {}"
+        )
+        // clang-format on
+#endif
     }
 
-    VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& device) noexcept : //NOLINT
-            _vk_instance{device._vk_instance}
-    {
+    VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& device) noexcept ://NOLINT
+            _vk_instance {device._vk_instance} {
+#ifdef BUILD_DEBUG
+        _debug_utils_messenger = device._debug_utils_messenger;
+        device._debug_utils_messenger = nullptr;
+#endif
         device._vk_instance = nullptr;
     }
 
     VulkanContext::~VulkanContext() noexcept {
-        if (_vk_instance == nullptr) {
-            return;
+#ifdef BUILD_DEBUG
+        if(_debug_utils_messenger != nullptr) {
+            const auto destroy_debug_utils_messenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+                    vkGetInstanceProcAddr(_vk_instance, "vkDestroyDebugUtilsMessengerEXT"));
+            destroy_debug_utils_messenger(_vk_instance, _debug_utils_messenger, nullptr);
+            _debug_utils_messenger = nullptr;
         }
-
-        vkDestroyInstance(_vk_instance, nullptr);
-        _vk_instance = nullptr;
+#endif
+        if(_vk_instance != nullptr) {
+            vkDestroyInstance(_vk_instance, nullptr);
+            _vk_instance = nullptr;
+        }
     }
 
-    auto VulkanContext::find_device(const aetherium::renderer::DeviceSearchStrategy strategy) const noexcept -> kstd::Result<VulkanDevice> {
+    auto VulkanContext::find_device(const aetherium::renderer::DeviceSearchStrategy strategy) const noexcept
+            -> kstd::Result<VulkanDevice> {
         uint32_t device_count = 0;
         VK_CHECK(vkEnumeratePhysicalDevices(_vk_instance, &device_count, nullptr), "Unable to find device: {}")
         std::vector<VkPhysicalDevice> devices {device_count};
@@ -134,9 +182,10 @@ namespace aetherium::renderer {
 
         // Get physical device and create
         VkPhysicalDevice physical_device;
-        switch (strategy) {
+        switch(strategy) {
             case DeviceSearchStrategy::HIGHEST_PERFORMANCE: physical_device = sorted_devices.at(0); break;
-            case DeviceSearchStrategy::LOWEST_PERFORMANCE: physical_device = sorted_devices.at(sorted_devices.size() - 1);
+            case DeviceSearchStrategy::LOWEST_PERFORMANCE:
+                physical_device = sorted_devices.at(sorted_devices.size() - 1);
         }
         return kstd::try_construct<VulkanDevice>(physical_device);
     }
@@ -144,12 +193,15 @@ namespace aetherium::renderer {
     auto VulkanContext::operator=(aetherium::renderer::VulkanContext&& other) noexcept -> VulkanContext& {
         _vk_instance = other._vk_instance;
         other._vk_instance = nullptr;
-
+#ifdef BUILD_DEBUG
+        _debug_utils_messenger = other._debug_utils_messenger;
+        other._debug_utils_messenger = nullptr;
+#endif
         return *this;
     }
 
     [[nodiscard]] auto get_vk_error_message(const VkResult result) noexcept -> std::string {
-        switch (result) {
+        switch(result) {
             case VK_SUCCESS: return "Succeeded";
             case VK_ERROR_DEVICE_LOST: return "Device lost";
             case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "Out of device memory";
@@ -157,4 +209,4 @@ namespace aetherium::renderer {
             default: return "Unknown";
         }
     }
-}
+}// namespace aetherium::renderer
