@@ -17,7 +17,7 @@
 
 using namespace aetherium;
 
-TEST(aetherium_ResourceManager, test_resource_manager) {
+TEST(aetherium_ResourceManager, test_load_resource) {
     spdlog::set_level(spdlog::level::debug);
 
     enum ResourceType {
@@ -26,7 +26,22 @@ TEST(aetherium_ResourceManager, test_resource_manager) {
 
     ResourceManager<ResourceType> resource_manager {};
     resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
-    const std::string text = resource_manager.load_resource(ResourceType::MAIN, "resource.txt", read_string_factory)
+    const auto text = resource_manager.load_resource<ResourceType::MAIN>("resource.txt", read_string_factory)
                               .get_or_throw();
     ASSERT_EQ(text, "This is a test text");
+}
+
+TEST(aetherium_ResourceManager, test_load_resources) {
+    spdlog::set_level(spdlog::level::debug);
+
+    enum ResourceType {
+        MAIN
+    };
+
+    ResourceManager<ResourceType> resource_manager {};
+    resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
+    const auto resources = resource_manager.load_resources<ResourceType::MAIN>(read_string_factory)
+            .get_or_throw();
+    ASSERT_EQ(resources.size(), 1);
+    ASSERT_EQ(resources.at(0), "This is a test text");
 }

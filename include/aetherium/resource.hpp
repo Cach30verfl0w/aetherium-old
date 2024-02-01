@@ -52,7 +52,7 @@ namespace aetherium {
         return value;
     };
 
-    constexpr auto read_string_factory = [](auto& value) noexcept -> std::string {
+    constexpr auto read_string_factory = [](auto& value) noexcept -> auto {
         std::ifstream file {value.get_resource_path()->c_str()};
         return std::string {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
     };
@@ -102,15 +102,35 @@ namespace aetherium {
             return {};
         }
 
-        template<typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
-        [[nodiscard]] auto load_resource(RESOURCE_TYPE type, std::string_view name, F&& factory) noexcept -> kstd::Result<FR> {
+        template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
+        [[nodiscard]] auto load_resources(F&& factory) noexcept -> kstd::Result<std::vector<FR>> {
+            static_assert(std::is_convertible_v<F, std::function<kstd::Result<FR>(Resource<RESOURCE_TYPE>&)>>,
+                          "Factory signature does not match");
+            using namespace std::string_literals;
+            std::vector<FR> resource_list {};
+            for (const auto& resource : _registered_resources) {
+                if (resource.get_resource_type() != TYPE)
+                    continue;
+
+                const kstd::Result<FR> result = factory(resource);
+                if (result.is_error()) {
+                    return kstd::Error {result.get_error()};
+                }
+
+                resource_list.push_back(result.get());
+            }
+            return resource_list;
+        }
+
+        template<RESOURCE_TYPE TYPE, typename F, typename FR = std::invoke_result_t<F, Resource<RESOURCE_TYPE>&>>
+        [[nodiscard]] auto load_resource(std::string_view name, F&& factory) noexcept -> kstd::Result<FR> {
             static_assert(std::is_convertible_v<F, std::function<kstd::Result<FR>(Resource<RESOURCE_TYPE>&)>>,
                           "Factory signature does not match");
             using namespace std::string_literals;
 
             const auto opt_result_value = kstd::streams::stream(_registered_resources)
                     .filter([&](auto& resource) {
-                        return resource.get_resource_type() == type && resource.get_resource_path()->filename() == name;
+                        return resource.get_resource_type() == TYPE && resource.get_resource_path()->filename() == name;
                     })
                     .map(factory)
                     .find_any();
