@@ -14,33 +14,33 @@
 
 #include <aetherium/resource.hpp>
 #include <gtest/gtest.h>
+#include <utility>
 
 using namespace aetherium;
+
+class TestResource final : public Resource {
+    std::string _text;
+
+    public:
+    explicit TestResource(fs::path path) :
+            Resource {std::move(path)} {
+    }
+
+    kstd::Result<void> reload(const aetherium::ResourceManager& resource_manager) noexcept final {
+        std::ifstream stream {_resource_path};
+        _text = std::string {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
+        return {};
+    }
+
+    [[nodiscard]] auto get_text() const noexcept -> const std::string& {
+        return _text;
+    }
+};
 
 TEST(aetherium_ResourceManager, test_load_resource) {
     spdlog::set_level(spdlog::level::debug);
 
-    enum ResourceType {
-        MAIN
-    };
-
-    ResourceManager<ResourceType> resource_manager {};
-    resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
-    const auto text =
-            resource_manager.load_resource<ResourceType::MAIN>("resource.txt", read_string_factory).get_or_throw();
-    ASSERT_EQ(text, "This is a test text");
-}
-
-TEST(aetherium_ResourceManager, test_load_resources) {
-    spdlog::set_level(spdlog::level::debug);
-
-    enum ResourceType {
-        MAIN
-    };
-
-    ResourceManager<ResourceType> resource_manager {};
-    resource_manager.add_directory(ResourceType::MAIN, "../assets/test").throw_if_error();
-    const auto resources = resource_manager.load_resources<ResourceType::MAIN>(read_string_factory).get_or_throw();
-    ASSERT_EQ(resources.size(), 1);
-    ASSERT_EQ(resources.at(0), "This is a test text");
+    ResourceManager resource_manager {".."};
+    const auto resource = resource_manager.load_resource<TestResource>("test", "resource.txt").get_or_throw();
+    ASSERT_EQ(resource->get_text(), "This is a test text");
 }
