@@ -22,9 +22,12 @@ class TestResource final : public Resource {
     std::string _text;
 
     public:
-    explicit TestResource(fs::path path) :
-            Resource {std::move(path)} {
+    explicit TestResource(fs::path path, const kstd::reflect::RTTI* runtime_type) ://NOLINT
+            Resource {std::move(path), runtime_type} {
     }
+    ~TestResource() noexcept final = default;
+    KSTD_DEFAULT_MOVE(TestResource, TestResource);
+    KSTD_NO_COPY(TestResource, TestResource);
 
     kstd::Result<void> reload(const aetherium::ResourceManager& resource_manager) noexcept final {
         std::ifstream stream {_resource_path};
@@ -41,6 +44,33 @@ TEST(aetherium_ResourceManager, test_load_resource) {
     spdlog::set_level(spdlog::level::debug);
 
     ResourceManager resource_manager {".."};
-    const auto resource = resource_manager.load_resource<TestResource>("test", "resource.txt").get_or_throw();
+    auto resource = resource_manager.load_resource<TestResource>("test", "resource.txt");
+    resource.throw_if_error();
     ASSERT_EQ(resource->get_text(), "This is a test text");
+}
+
+TEST(aetherium_ResourceManager, test_get_resource) {
+    spdlog::set_level(spdlog::level::debug);
+
+    ResourceManager resource_manager {".."};
+    resource_manager.load_resource<TestResource>("test", "resource.txt").throw_if_error();
+    ASSERT_EQ(resource_manager.get_resource<TestResource>("test", "resource.txt")->get_text(),
+              "This is a test text");
+}
+
+TEST(aetherium_ResourceManager, test_get_or_load_resource) {
+    spdlog::set_level(spdlog::level::debug);
+
+    ResourceManager resource_manager {".."};
+    ASSERT_EQ(resource_manager.get_or_load<TestResource>("test", "resource.txt")->get_text(),
+              "This is a test text");
+}
+
+TEST(aetherium_ResourceManager, test_reload_resources) {
+    spdlog::set_level(spdlog::level::debug);
+
+    ResourceManager resource_manager {".."};
+    resource_manager.load_resource<TestResource>("test", "resource.txt").throw_if_error();
+    resource_manager.reload_by_type<TestResource>().throw_if_error();
+    resource_manager.reload().throw_if_error();
 }

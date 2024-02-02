@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <utility>
-
 #include "aetherium/resource.hpp"
 
 namespace aetherium {
-    Resource::Resource(fs::path resource_path) noexcept ://NOLINT
-            _resource_path {std::move(resource_path)} {
-    }
-
     ResourceManager::ResourceManager(std::string_view base_directory) noexcept ://NOLINT
             _base_directory {base_directory} {
+    }
+
+    auto ResourceManager::reload() noexcept -> kstd::Result<uint32_t>  {
+        for (auto& _loaded_resource : _loaded_resources) {
+            if (const auto result = _loaded_resource.second->reload(*this); result.is_error()) {
+                return kstd::Error {result.get_error()};
+            }
+        }
+        return _loaded_resources.size();
     }
 }// namespace aetherium
