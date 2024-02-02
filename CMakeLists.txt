@@ -5,6 +5,7 @@ project(aetherium LANGUAGES C CXX)
 find_package(Vulkan REQUIRED)
 
 # Include CMake modules
+set(USE_SANITIZER "")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;")
 include(cmx-bootstrap)
 cmx_include_scripts()
@@ -81,6 +82,7 @@ file(GLOB EXAMPLE_FOLDER_LIST DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/exam
 foreach(EXAMPLE_FOLDER ${EXAMPLE_FOLDER_LIST})
     get_filename_component(PROJECT_NAME ${EXAMPLE_FOLDER} NAME)
     cmx_add_application(${PROJECT_NAME} "${EXAMPLE_FOLDER}")
-    message(STATUS "Add ${PROJECT_NAME} as example project")
+    message(STATUS "Add ${PROJECT_NAME} (${EXAMPLE_FOLDER}) as example project")
     target_link_libraries(${PROJECT_NAME} PUBLIC aetherium)
+    add_compile_definitions(${PROJECT_NAME} EXAMPLE_APP_PATH="${EXAMPLE_FOLDER}")
 endforeach()

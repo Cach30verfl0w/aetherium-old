@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <aetherium/renderer/renderer.hpp>
+#include <aetherium/resource.hpp>
 #include <aetherium/window.hpp>
 
 using namespace aetherium;
@@ -21,6 +22,7 @@ auto main() -> int {
     auto window = Window {"Example Window"};
     auto context = renderer::VulkanContext {window, "Test application", VK_MAKE_VERSION(1, 0, 0)};
     auto device = context.find_device(renderer::DeviceSearchStrategy::HIGHEST_PERFORMANCE);
+    auto resource_manager = ResourceManager {EXAMPLE_APP_PATH};
     printf("Selected device: %s\n", device->get_name().c_str());
 
     window.run_loop().throw_if_error();
