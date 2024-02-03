@@ -44,35 +44,6 @@ namespace aetherium::renderer {
                 _shader_kind {shader_kind} {
         }
 
-        kstd::Result<void> reload(const aetherium::ResourceManager& resource_manager) noexcept final {
-            UNUSED_PARAMETER(resource_manager);
-
-            auto stream = std::ifstream {_resource_path};
-            stream.unsetf(std::ios::skipws);
-
-            const std::string data {std::istream_iterator<char> {stream}, std::istream_iterator<char> {}};
-            const auto shader_name = _resource_path.filename().c_str();
-
-            // Parse and compile IR
-            auto* compiler = shaderc_compiler_initialize();
-            auto* compile_options = shaderc_compile_options_initialize();
-            shaderc_compile_options_set_source_language(compile_options, shaderc_source_language_glsl);
-
-            auto* result = shaderc_compile_into_spv(compiler, data.data(), data.size(), shader_kind_into_shaderc(_shader_kind),
-                                             shader_name, "main", nullptr);
-            if(const auto status = shaderc_result_get_compilation_status(result);
-               status != shaderc_compilation_status_success) {
-                return kstd::Error {
-                        fmt::format("Unable to reload shader: {}", shaderc_result_get_error_message(result))};
-            }
-
-            _bytecode = {};
-            _bytecode.reserve(shaderc_result_get_length(result));
-            std::memcpy(_bytecode.data(), shaderc_result_get_bytes(result), _bytecode.size());
-            shaderc_result_release(result);
-            shaderc_compile_options_release(compile_options);
-            shaderc_compiler_release(compiler);
-            return {};
-        }
+        kstd::Result<void> reload(const aetherium::ResourceManager& resource_manager) noexcept final;
     };
 }// namespace aetherium::renderer
