@@ -69,6 +69,7 @@ namespace aetherium::renderer {
         device_create_info.queueCreateInfoCount = 1;
         VK_CHECK_EX(vkCreateDevice(physical_device, &device_create_info, nullptr, &_virtual_device),
                     "Unable to create device {}")
+        volkLoadDevice(_virtual_device);
     }
 
     VulkanDevice::VulkanDevice(VulkanDevice&& device) noexcept :// NOLINT
@@ -122,15 +123,17 @@ namespace aetherium::renderer {
         constexpr auto validation_layers = std::array<const char*, 0> {};
 #endif
 
+        VK_CHECK_EX(volkInitialize(), "Unable to create vulkan context: {}")
+
         // Get SDL window extensions
         uint32_t window_ext_count = 0;
         if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, nullptr)) {
-            throw std::runtime_error {"Unable to create app: Unable to get instance extension count"s};
+            throw std::runtime_error {"Unable to create vulkan context: Unable to get instance extension count"s};
         }
 
         auto extensions = std::vector<const char*> {window_ext_count};
         if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
-            throw std::runtime_error {"Unable to create app: Unable to get instance extension names"s};
+            throw std::runtime_error {"Unable to create vulkan context: Unable to get instance extension names"s};
         }
 
 #ifdef BUILD_DEBUG
@@ -155,6 +158,7 @@ namespace aetherium::renderer {
         instance_create_info.enabledLayerCount = validation_layers.size();
         instance_create_info.ppEnabledLayerNames = validation_layers.data();
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_vk_instance), "Unable to create app: {}")
+        volkLoadInstance(_vk_instance);
 
         // Create debug utils messenger
 #if BUILD_DEBUG

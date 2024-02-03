@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "aetherium/utils.hpp"
 #include <filesystem>
 #include <kstd/option.hpp>
 #include <kstd/reflect/reflection.hpp>

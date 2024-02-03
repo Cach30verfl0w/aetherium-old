@@ -23,7 +23,7 @@
 #include <kstd/streams/collectors.hpp>
 #include <kstd/streams/stream.hpp>
 #include <string>
-#include <vulkan/vulkan_core.h>
+#include <volk.h>
 
 namespace aetherium::renderer {
     class VulkanContext;

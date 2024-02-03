@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 project(aetherium LANGUAGES C CXX)
 
-# Include packages
-find_package(Vulkan REQUIRED)
-
 # Include CMake modules
 set(USE_SANITIZER "")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;")
@@ -19,7 +16,6 @@ include(cmx-parallel-hashmap)
 # Shared Library
 cmx_add_library(aetherium SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(aetherium PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(aetherium PUBLIC Vulkan::Vulkan)
 cmx_include_glm(aetherium PUBLIC)
 cmx_include_kstd_core(aetherium PUBLIC)
 cmx_include_kstd_streams(aetherium PUBLIC)
@@ -29,7 +25,6 @@ cmx_include_phmap(aetherium PUBLIC)
 
 cmx_add_library(aetherium-static STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(aetherium-static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(aetherium-static PUBLIC Vulkan::Vulkan)
 cmx_include_glm(aetherium-static PUBLIC)
 cmx_include_kstd_core(aetherium-static PUBLIC)
 cmx_include_kstd_streams(aetherium-static PUBLIC)
@@ -62,6 +57,21 @@ if(${CMX_BUILD_DEBUG})
 else()
     add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
 endif()
+
+# TODO: Pull in https://github.com/KhronosGroup/Vulkan-Headers
+
+# Pull in volk
+FetchContent_Declare(
+        volk
+        GIT_REPOSITORY https://github.com/zeux/volk.git
+        GIT_TAG master
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(volk)
+target_include_directories(aetherium PUBLIC "${CMAKE_BINARY_DIR}/_deps/volk-src/include")
+target_link_libraries(aetherium PUBLIC volk)
+target_include_directories(aetherium-static PRIVATE "${CMAKE_BINARY_DIR}/_deps/volk-src/include")
+target_link_libraries(aetherium-static PUBLIC volk)
 
 # Pull in SDL2
 FetchContent_Declare(
