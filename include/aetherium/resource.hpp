@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define once
+#pragma once
+
 #include <filesystem>
-#include <fstream>
 #include <kstd/option.hpp>
 #include <kstd/reflect/reflection.hpp>
 #include <kstd/result.hpp>
@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+#include <kstd/safe_alloc.hpp>
 
 namespace fs = std::filesystem;
 
@@ -45,6 +46,7 @@ namespace aetherium {
         virtual ~Resource() noexcept = default;
 
         virtual auto reload(const ResourceManager& resource_manager) noexcept -> kstd::Result<void> {
+            UNUSED_PARAMETER(resource_manager);
             return {};
         }
 
@@ -98,6 +100,7 @@ namespace aetherium {
                 return kstd::Error {"Unable to load resource: The resource path doesn't exists or isn't a file"s};
             }
 
+            // TODO: Transform construct into result
             const auto rtti = &static_cast<const kstd::reflect::RTTI&>(*kstd::reflect::lookup<RESOURCE>());
             auto resource = std::make_shared<RESOURCE>(resource_path, rtti, std::forward<ARGS>(args)...);
             if(const auto result = resource->reload(*this); result.is_error()) {

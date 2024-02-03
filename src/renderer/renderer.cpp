@@ -105,9 +105,9 @@ namespace aetherium::renderer {
             -> kstd::Option<uint32_t> {
         VkPhysicalDeviceMemoryProperties memory_properties {};
         vkGetPhysicalDeviceMemoryProperties(_physical_device, &memory_properties);
-        for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
+        for(uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
             const auto memory_type = memory_properties.memoryTypes[i];
-            if ((type_filter & (1 << i)) == 1 && (memory_type.propertyFlags & properties) == properties) {
+            if((type_filter & (1 << i)) == 1 && (memory_type.propertyFlags & properties) == properties) {
                 return i;
             }
         }

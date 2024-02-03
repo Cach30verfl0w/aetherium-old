@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #pragma once
+
 #include <SDL2/SDL.h>
 #include <fmt/format.h>
 #include <kstd/defaults.hpp>

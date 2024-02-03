@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/resource.hpp>
+#include <aetherium/renderer/shader.hpp>
 #include <gtest/gtest.h>
 #include <utility>
 
@@ -73,4 +73,12 @@ TEST(aetherium_ResourceManager, test_reload_resources) {
     resource_manager.load_resource<TestResource>("test", "resource.txt").throw_if_error();
     resource_manager.reload_by_type<TestResource>().throw_if_error();
     resource_manager.reload().throw_if_error();
+}
+
+TEST(aetherium_ResourceManager, test_load_shader) {
+    using namespace renderer;
+    spdlog::set_level(spdlog::level::debug);
+
+    ResourceManager resource_manager {".."};
+    resource_manager.load_resource<Shader>("test", "shader.glsl", ShaderKind::VERTEX).throw_if_error();
 }

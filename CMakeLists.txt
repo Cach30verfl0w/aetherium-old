@@ -76,6 +76,46 @@ target_link_libraries(aetherium PUBLIC SDL2 SDL2main)
 target_include_directories(aetherium-static PRIVATE "${CMAKE_BINARY_DIR}/_deps/sdl2-src/include")
 target_link_libraries(aetherium-static PUBLIC SDL2 SDL2main)
 
+# Pull in spirv-headers
+FetchContent_Declare(
+        SPIRV-Headers
+        GIT_REPOSITORY https://github.com/KhronosGroup/spirv-headers.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(SPIRV-Headers)
+
+# Pull in spirv-tools
+FetchContent_Declare(
+        SPIRV-Tools
+        GIT_REPOSITORY https://github.com/KhronosGroup/spirv-tools.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(SPIRV-Tools)
+
+# Pull in glsllang
+FetchContent_Declare(
+        glslang
+        GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(glslang)
+
+# Pull in shaderc
+FetchContent_Declare(
+        shaderc
+        GIT_REPOSITORY https://github.com/google/shaderc.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(shaderc)
+target_include_directories(aetherium PUBLIC "${CMAKE_BINARY_DIR}/_deps/spirv-cross-src/include")
+target_link_libraries(aetherium PUBLIC shaderc)
+target_include_directories(aetherium-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/spirv-cross-src/include")
+target_link_libraries(aetherium-static PUBLIC shaderc)
+
 # Add example folders
 message("Adding example projects as applications")
 file(GLOB EXAMPLE_FOLDER_LIST DIRECTORIES true "${CMAKE_CURRENT_SOURCE_DIR}/examples/*")

@@ -13,17 +13,23 @@
 // limitations under the License.
 
 #include <aetherium/renderer/renderer.hpp>
+#include <aetherium/renderer/shader.hpp>
 #include <aetherium/resource.hpp>
 #include <aetherium/window.hpp>
 
 using namespace aetherium;
+using namespace aetherium::renderer;
 
 auto main() -> int {
     auto window = Window {"Example Window"};
-    auto context = renderer::VulkanContext {window, "Test application", VK_MAKE_VERSION(1, 0, 0)};
-    auto device = context.find_device(renderer::DeviceSearchStrategy::HIGHEST_PERFORMANCE);
+    auto context = VulkanContext {window, "Test application", VK_MAKE_VERSION(1, 0, 0)};
+    auto device = context.find_device(DeviceSearchStrategy::HIGHEST_PERFORMANCE);
+
     auto resource_manager = ResourceManager {EXAMPLE_APP_PATH};
-    printf("Selected device: %s\n", device->get_name().c_str());
+    auto shader = resource_manager.load_resource<Shader>("test", "shader.glsl", ShaderKind::VERTEX);
+    shader.throw_if_error();
+    printf("Selected device %s and shader found at %s\n", device->get_name().c_str(),
+           shader->get_resource_path().c_str());
 
     window.run_loop().throw_if_error();
 }

@@ -13,7 +13,9 @@
 // limitations under the License.
 
 #pragma once
+
 #include "aetherium/window.hpp"
+#include "aetherium/utils.hpp"
 #include <SDL2/SDL_vulkan.h>
 #include <fmt/format.h>
 #include <kstd/result.hpp>
@@ -22,16 +24,6 @@
 #include <kstd/streams/stream.hpp>
 #include <string>
 #include <vulkan/vulkan_core.h>
-
-#define VK_CHECK_EX(x, m)                                                                                              \
-    if(const auto result = (x); result != VK_SUCCESS) {                                                                \
-        throw std::runtime_error {fmt::format((m), get_vk_error_message(result))};                                     \
-    }
-
-#define VK_CHECK(x, m)                                                                                                 \
-    if(const auto result = (x); result != VK_SUCCESS) {                                                                \
-        return kstd::Error {fmt::format((m), get_vk_error_message(result))};                                           \
-    }
 
 namespace aetherium::renderer {
     class VulkanContext;
