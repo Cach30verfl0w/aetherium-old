@@ -58,8 +58,6 @@ else()
     add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
 endif()
 
-# TODO: Pull in https://github.com/KhronosGroup/Vulkan-Headers
-
 # Pull in volk
 FetchContent_Declare(
         volk

@@ -1,0 +1,33 @@
+name: Build and Test
+on:
+  push:
+
+jobs:
+  linux-x64-cpp17-gcc:
+    runs-on: ubuntu-22.04
+    name: Linux x64 with C++17 (GCC)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare CMake
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: '3.22.x'
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+      - name: Prepare GCC
+        run: |
+          apt update -y
+          apt install gcc g++ -y
+      - name: Prepare project
+        run: cmake --version && cmake -B cmake-build-debug -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles"
+      - name: Build project
+        run: |
+          export THREADS=$(grep -c ^processor /proc/cpuinfo)
+          cmake --build cmake-build-debug --config Debug --target aetherium-tests --parallel $THREADS
+      - name: Test project
+        working-directory: ${{github.workspace}}/cmake-build-debug
+        run: ./aetherium-tests --gtest_filter=*
