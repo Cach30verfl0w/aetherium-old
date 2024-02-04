@@ -14,24 +14,19 @@
 
 #pragma once
 
-#include "aetherium/utils.hpp"
+#include "aetherium/core/utils.hpp"
 #include <filesystem>
 #include <kstd/option.hpp>
 #include <kstd/reflect/reflection.hpp>
 #include <kstd/result.hpp>
-#include <kstd/streams/collectors.hpp>
-#include <kstd/streams/stream.hpp>
 #include <parallel_hashmap/phmap.h>
-#include <spdlog/spdlog.h>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
-#include <vector>
 #include <kstd/safe_alloc.hpp>
 
 namespace fs = std::filesystem;
 
-namespace aetherium {
+namespace aetherium::core {
     class ResourceManager;
 
     class Resource {

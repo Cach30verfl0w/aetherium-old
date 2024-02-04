@@ -5,7 +5,7 @@ on:
 jobs:
   linux-x64-cpp17-gcc:
     runs-on: ubuntu-22.04
-    name: Linux x64 with C++17 (GCC)
+    name: Linux x64 with C++20 (GCC)
     steps:
       - uses: actions/checkout@v4
       - name: Prepare CMake

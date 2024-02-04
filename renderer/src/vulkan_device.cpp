@@ -12,19 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "aetherium/resource.hpp"
+#include "aetherium/renderer/vulkan_device.hpp"
 
-namespace aetherium {
-    ResourceManager::ResourceManager(std::string_view base_directory) noexcept ://NOLINT
-            _base_directory {base_directory} {
+namespace aetherium::renderer {
+    VulkanDevice::VulkanDevice(VkPhysicalDevice physical_device) :// NOLINT
+            _physical_device {physical_device},
+            _logical_device {} {
     }
-
-    auto ResourceManager::reload() noexcept -> kstd::Result<uint32_t>  {
-        for (auto& _loaded_resource : _loaded_resources) {
-            if (const auto result = _loaded_resource.second->reload(*this); result.is_error()) {
-                return kstd::Error {result.get_error()};
-            }
-        }
-        return _loaded_resources.size();
-    }
-}// namespace aetherium
+}// namespace aetherium::renderer

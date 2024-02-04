@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/renderer/shader.hpp>
+#include <aetherium/core/resource.hpp>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <utility>
 
-using namespace aetherium;
+using namespace aetherium::core;
 
 class TestResource final : public Resource {
     std::string _text;
@@ -29,7 +30,7 @@ class TestResource final : public Resource {
     KSTD_DEFAULT_MOVE(TestResource, TestResource);
     KSTD_NO_COPY(TestResource, TestResource);
 
-    kstd::Result<void> reload(const aetherium::ResourceManager& resource_manager) noexcept final {
+    kstd::Result<void> reload(const ResourceManager& resource_manager) noexcept final {
         std::ifstream stream {_resource_path};
         _text = std::string {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
         return {};
@@ -41,44 +42,28 @@ class TestResource final : public Resource {
 };
 
 TEST(aetherium_ResourceManager, test_load_resource) {
-    spdlog::set_level(spdlog::level::debug);
-
-    ResourceManager resource_manager {".."};
+    ResourceManager resource_manager {TESTS_DIRECTORY};
     auto resource = resource_manager.load_resource<TestResource>("test", "resource.txt");
     resource.throw_if_error();
     ASSERT_EQ(resource->get_text(), "This is a test text");
 }
 
 TEST(aetherium_ResourceManager, test_get_resource) {
-    spdlog::set_level(spdlog::level::debug);
-
-    ResourceManager resource_manager {".."};
+    ResourceManager resource_manager {TESTS_DIRECTORY};
     resource_manager.load_resource<TestResource>("test", "resource.txt").throw_if_error();
     ASSERT_EQ(resource_manager.get_resource<TestResource>("test", "resource.txt")->get_text(),
               "This is a test text");
 }
 
 TEST(aetherium_ResourceManager, test_get_or_load_resource) {
-    spdlog::set_level(spdlog::level::debug);
-
-    ResourceManager resource_manager {".."};
+    ResourceManager resource_manager {TESTS_DIRECTORY};
     ASSERT_EQ(resource_manager.get_or_load<TestResource>("test", "resource.txt")->get_text(),
               "This is a test text");
 }
 
 TEST(aetherium_ResourceManager, test_reload_resources) {
-    spdlog::set_level(spdlog::level::debug);
-
-    ResourceManager resource_manager {".."};
+    ResourceManager resource_manager {TESTS_DIRECTORY};
     resource_manager.load_resource<TestResource>("test", "resource.txt").throw_if_error();
     resource_manager.reload_by_type<TestResource>().throw_if_error();
     resource_manager.reload().throw_if_error();
-}
-
-TEST(aetherium_ResourceManager, test_load_shader) {
-    using namespace renderer;
-    spdlog::set_level(spdlog::level::debug);
-
-    ResourceManager resource_manager {".."};
-    resource_manager.load_resource<Shader>("test", "shader.glsl", ShaderKind::VERTEX).throw_if_error();
 }
