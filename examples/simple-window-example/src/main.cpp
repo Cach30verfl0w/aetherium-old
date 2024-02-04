@@ -13,7 +13,15 @@
 // limitations under the License.
 
 #include <aetherium/core/resource.hpp>
+#include <aetherium/renderer/vulkan_context.hpp>
+
+using namespace aetherium;
 
 auto main() -> int {
+    auto resource_manager = core::ResourceManager {EXAMPLE_DIRECTORY};
+    auto vulkan_context = renderer::VulkanContext {"Test App", 1, 0, 0};
+    auto device = vulkan_context.find_device(renderer::DeviceSearchStrategy::HIGHEST_PERFORMANCE);
+    device.throw_if_error();
+    printf("Name of the device: %s\n", device->get_name().c_str());
     return 0;
 }

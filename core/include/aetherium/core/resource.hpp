@@ -82,6 +82,7 @@ namespace aetherium::core {
          * @param space  The namespace of the resource
          * @param path   The path of the resource
          * @return       The resource itself or an error
+         *
          * @author       Cedric Hammes
          * @since        02/02/2024
          */
@@ -115,6 +116,7 @@ namespace aetherium::core {
          * @param space     The resource namespace
          * @param path      The resource path
          * @return          The resource itself or none
+         *
          * @author          Cedric Hammes
          * @since           02/02/2024
          */
@@ -145,6 +147,7 @@ namespace aetherium::core {
          * @param path      The resource path
          * @param args      The initializer parameters
          * @return          The resource reference or an error
+         *
          * @author          Cedric Hammes
          * @since           02/02/2024
          */
@@ -163,6 +166,7 @@ namespace aetherium::core {
          * This function enumerates through all resources with the same type as specified and reloads them.
          *
          * @return The count of reloaded resources or an error
+         *
          * @author Cedric Hammes
          * @since  02/02/2024
          */
@@ -187,6 +191,7 @@ namespace aetherium::core {
          * This function enumerates through all resources and reloads them.
          *
          * @return The count of reloaded resources or an error
+         *
          * @author Cedric Hammes
          * @since  02/02/2024
          */

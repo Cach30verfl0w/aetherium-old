@@ -13,14 +13,47 @@
 // limitations under the License.
 
 #pragma once
-#include <vulkan/vulkan_core.h>
+#include "aetherium/renderer/utils.hpp"
+#include <kstd/defaults.hpp>
 
 namespace aetherium::renderer {
+    /**
+     * This class is a wrapper around the Vulkan device handle and physical device handle.
+     *
+     * @author Cedric Hammes
+     * @since  04/02/2024
+     */
     class VulkanDevice {
         VkPhysicalDevice _physical_device;
-        VkDevice _logical_device;
+        VkDevice _virtual_device;
+        VkPhysicalDeviceProperties _properties {};
 
         public:
+        /**
+         * This constructor creates the vulkan device by the specified physical device.
+         *
+         * @param physical_device The handle to the physical device
+         *
+         * @author Cedric Hammes
+         * @since  04/02/2024
+         */
         explicit VulkanDevice(VkPhysicalDevice physical_device);
+        VulkanDevice(VulkanDevice&& other) noexcept;
+        ~VulkanDevice() noexcept;
+        KSTD_NO_COPY(VulkanDevice, VulkanDevice);
+
+        /**
+         * This function returns the name of the device by the device properties.
+         *
+         * @return The name of the device
+         *
+         * @author Cedric Hammes
+         * @since  04/02/2024
+         */
+        [[nodiscard]] inline auto get_name() const noexcept -> std::string {
+            return std::string {_properties.deviceName};
+        }
+
+        auto operator=(VulkanDevice&& other) noexcept -> VulkanDevice&;
     };
-}// namespace aetherium::renderer
+}
