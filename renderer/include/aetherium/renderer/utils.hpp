@@ -32,6 +32,8 @@ namespace aetherium::renderer {
     [[nodiscard]] constexpr auto get_vulkan_error_message(const VkResult result) noexcept -> std::string_view {
         switch (result) {
             case VK_SUCCESS: return "Success";
+            case VK_ERROR_LAYER_NOT_PRESENT: return "Layer not present";
+            case VK_ERROR_EXTENSION_NOT_PRESENT: return "Extension not present";
             case VK_ERROR_INITIALIZATION_FAILED: return "Initialization failed";
             case VK_ERROR_OUT_OF_HOST_MEMORY: return "Out of host memory";
             case VK_ERROR_OUT_OF_DEVICE_MEMORY: return "Out of device memory";

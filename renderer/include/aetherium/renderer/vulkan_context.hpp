@@ -15,6 +15,7 @@
 #pragma once
 
 #include "aetherium/renderer/vulkan_device.hpp"
+#include <aetherium/core/window.hpp>
 #include <kstd/defaults.hpp>
 #include <kstd/option.hpp>
 #include <kstd/result.hpp>
@@ -46,7 +47,7 @@ namespace aetherium::renderer {
      * @author Cedric Hammes
      * @since  04/02/2024
      */
-    class VulkanContext {
+    class VulkanContext final {
         VkInstance _instance {};
 
         public:
@@ -63,7 +64,7 @@ namespace aetherium::renderer {
          * @author      Cedric Hammes
          * @since       04/02/2024
          */
-        VulkanContext(const char* name, uint8_t major, uint8_t minor, uint8_t patch);
+        VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor, uint8_t patch);
         VulkanContext(VulkanContext&& other) noexcept;
         auto operator=(VulkanContext&& other) noexcept -> VulkanContext&;
 

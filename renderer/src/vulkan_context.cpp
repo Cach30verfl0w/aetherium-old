@@ -13,9 +13,10 @@
 // limitations under the License.
 
 #include "aetherium/renderer/vulkan_context.hpp"
+#include <SDL_vulkan.h>
+#include <kstd/safe_alloc.hpp>
 #include <kstd/streams/collectors.hpp>
 #include <kstd/streams/stream.hpp>
-#include <kstd/safe_alloc.hpp>
 
 namespace aetherium::renderer {
     namespace {
@@ -24,9 +25,9 @@ namespace aetherium::renderer {
             vkGetPhysicalDeviceMemoryProperties(device_handle, &memory_properties);
 
             uint32_t local_heap_size = 0;
-            for (uint32_t i = 0; i < memory_properties.memoryHeapCount; i++) {
+            for(uint32_t i = 0; i < memory_properties.memoryHeapCount; i++) {
                 const auto heap = memory_properties.memoryHeaps[i];
-                if ((heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+                if((heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
                     continue;
 
                 local_heap_size += heap.size;
@@ -37,7 +38,7 @@ namespace aetherium::renderer {
         constexpr auto compare_by_local_heap = [](const auto& left, const auto& right) -> bool {
             return get_device_local_heap(left) < get_device_local_heap(right);
         };
-    }
+    }// namespace
 
     /**
      * This constructor creates the vulkan constructor by the specified application name and the major, minor and patch
@@ -52,9 +53,27 @@ namespace aetherium::renderer {
      * @author      Cedric Hammes
      * @since       04/02/2024
      */
-    VulkanContext::VulkanContext(const char* name, uint8_t major, uint8_t minor, uint8_t patch) {
-        VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
+    VulkanContext::VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor,
+                                 uint8_t patch) {
+        using namespace std::string_literals;
 
+        VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
+        // TODO: Only use validation layer if debug build and validate existence of layer
+        const auto validation_layer_name = "VK_LAYER_KHRONOS_validation";
+
+
+        // Get SDL window extensions
+        uint32_t window_ext_count = 0;
+        if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, nullptr)) {
+            throw std::runtime_error {"Unable to create vulkan context: Unable to get instance extension count"s};
+        }
+
+        auto extensions = std::vector<const char*> {window_ext_count};
+        if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
+            throw std::runtime_error {"Unable to create vulkan context: Unable to get instance extension names"s};
+        }
+
+        // Create application
         VkApplicationInfo application_info = {};
         application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         application_info.apiVersion = VK_API_VERSION_1_3;
@@ -66,7 +85,8 @@ namespace aetherium::renderer {
         VkInstanceCreateInfo instance_create_info {};
         instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instance_create_info.pApplicationInfo = &application_info;
-        instance_create_info.enabledExtensionCount = 0;
+        instance_create_info.enabledExtensionCount = extensions.size();
+        instance_create_info.ppEnabledExtensionNames = extensions.data();
         instance_create_info.enabledLayerCount = 0;
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_instance), "Unable to create Vulkan context: {}")
         volkLoadInstance(_instance);

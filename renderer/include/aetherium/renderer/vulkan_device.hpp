@@ -14,7 +14,9 @@
 
 #pragma once
 #include "aetherium/renderer/utils.hpp"
+#include <aetherium/core/utils.hpp>
 #include <kstd/defaults.hpp>
+#include <kstd/option.hpp>
 
 namespace aetherium::renderer {
     /**
@@ -23,7 +25,7 @@ namespace aetherium::renderer {
      * @author Cedric Hammes
      * @since  04/02/2024
      */
-    class VulkanDevice {
+    class VulkanDevice final {
         VkPhysicalDevice _physical_device;
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
@@ -43,6 +45,19 @@ namespace aetherium::renderer {
         KSTD_NO_COPY(VulkanDevice, VulkanDevice);
 
         /**
+         * This function enumerates all available device queues and returns the first available device for the specific
+         * task. TODO: Implement queue enumeration function
+         *
+         * @param queue_flags The flags of the wanted queue
+         * @return            The queue or a none
+         *
+         * @author Cedric Hammes
+         * @since  05/02/2024
+         */
+        [[maybe_unused]] [[nodiscard]] auto acquire_queue(VkQueueFlagBits queue_flags) const noexcept
+                -> kstd::Option<VkQueue>;
+
+        /**
          * This function returns the name of the device by the device properties.
          *
          * @return The name of the device
@@ -56,4 +71,4 @@ namespace aetherium::renderer {
 
         auto operator=(VulkanDevice&& other) noexcept -> VulkanDevice&;
     };
-}
+}// namespace aetherium::renderer

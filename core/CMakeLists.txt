@@ -26,3 +26,16 @@ if(${CMX_BUILD_DEBUG})
 else()
     add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO)
 endif()
+
+# Pull in SDL2
+FetchContent_Declare(
+        SDL2
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL
+        GIT_TAG SDL2
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(SDL2)
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/sdl2-src/include")
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL2 SDL2main)
+target_include_directories(${PROJECT_NAME}-static PRIVATE "${CMAKE_BINARY_DIR}/_deps/sdl2-src/include")
+target_link_libraries(${PROJECT_NAME}-static PUBLIC SDL2 SDL2main)
