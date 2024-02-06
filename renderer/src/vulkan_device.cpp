@@ -47,6 +47,12 @@ namespace aetherium::renderer {
         volkLoadDevice(_virtual_device);
     }
 
+    VulkanDevice::VulkanDevice() noexcept :// NOLINT
+            _physical_device {},
+            _virtual_device {},
+            _properties {} {
+    }
+
     VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
             _physical_device {other._physical_device},
             _virtual_device {other._virtual_device},
@@ -62,22 +68,42 @@ namespace aetherium::renderer {
         }
     }
 
-    /**
-     * This function enumerates all available device queues and returns the first available device for the specific
-     * task. TODO: Implement queue enumeration function
-     *
-     * @param queue_flags The flags of the wanted queue
-     * @return            The queue or a none
-     *
-     * @author Cedric Hammes
-     * @since  05/02/2024
-     */
-    auto VulkanDevice::acquire_queue(VkQueueFlagBits queue_flags) const noexcept -> kstd::Option<VkQueue> {
-        UNUSED_PARAMETER(queue_flags);
+    template<typename F>
+    auto VulkanDevice::emit_command_buffer(F&& function) const noexcept -> kstd::Result<void> {
+        static_assert(std::is_convertible_v<F, std::function<void(CommandBuffer&)>>, "Invalid command buffer consumer");
+
+        // Create command buffer and submit fence
+        auto command_pool = kstd::try_construct<CommandPool>(this);
+        command_pool.throw_if_error();
+        auto command_buffer = std::move(command_pool->allocate_command_buffers(1).get_or_throw()[0]);
+
+        VkFence submit_fence {};
+        VkFenceCreateInfo submit_fence_create_info {};
+        submit_fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VK_CHECK(vkCreateFence(_virtual_device, &submit_fence_create_info, nullptr, &submit_fence),
+                 "Unable to submit one-time command buffer: {}")
+
+        // Perform operation
+        VkCommandBufferBeginInfo command_buffer_begin_info {};
+        command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        VK_CHECK(vkBeginCommandBuffer(command_buffer._command_buffer, &command_buffer_begin_info),
+                 "Unable to submit one-time command buffer: {}")
+        function(&command_buffer);
+        VK_CHECK(vkEndCommandBuffer(command_buffer._command_buffer), "Unable to submit one-time command buffer: {}")
+
+        // Submit and free
+        VkSubmitInfo submit_info {};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pCommandBuffers = &command_buffer._command_buffer;
+        submit_info.commandBufferCount = 1;
 
         VkQueue queue {};
         vkGetDeviceQueue(_virtual_device, 0, 0, &queue);
-        return queue;
+        vkQueueSubmit(queue, 1, &submit_info, submit_fence);
+        VK_CHECK(vkWaitForFences(_virtual_device, 1, &submit_fence, true, std::numeric_limits<uint32_t>::max()),
+                 "Unable to submit one-time command buffer: {}")
+        vkDestroyFence(_virtual_device, submit_fence, nullptr);
+        return {};
     }
 
     auto VulkanDevice::operator=(aetherium::renderer::VulkanDevice&& other) noexcept -> VulkanDevice& {
@@ -86,6 +112,86 @@ namespace aetherium::renderer {
         _properties = other._properties;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
+        return *this;
+    }
+
+    CommandBuffer::CommandBuffer(const CommandPool* command_pool, VkCommandBuffer command_buffer) :// NOLINT
+            _command_pool {command_pool},
+            _command_buffer {command_buffer} {
+    }
+
+    CommandBuffer::CommandBuffer(aetherium::renderer::CommandBuffer&& other) noexcept :// NOLINT
+            _command_pool {other._command_pool},
+            _command_buffer {other._command_buffer} {
+        other._command_pool = nullptr;
+        other._command_buffer = nullptr;
+    }
+
+    CommandBuffer::~CommandBuffer() noexcept {
+        if(_command_buffer != nullptr) {
+            vkFreeCommandBuffers(_command_pool->_vulkan_device->_virtual_device, _command_pool->_command_pool, 1,
+                                 &_command_buffer);
+            _command_buffer = nullptr;
+        }
+    }
+
+    auto CommandBuffer::operator=(aetherium::renderer::CommandBuffer&& other) noexcept -> CommandBuffer& {
+        _command_pool = other._command_pool;
+        _command_buffer = other._command_buffer;
+        other._command_pool = nullptr;
+        other._command_buffer = nullptr;
+        return *this;
+    }
+
+    CommandPool::CommandPool(const VulkanDevice* vulkan_device) :// NOLINT
+            _vulkan_device {vulkan_device},
+            _command_pool {} {
+        VkCommandPoolCreateInfo command_pool_create_info {};
+        command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        command_pool_create_info.queueFamilyIndex = 0;
+        VK_CHECK_EX(
+                vkCreateCommandPool(vulkan_device->_virtual_device, &command_pool_create_info, nullptr, &_command_pool),
+                "Unable to create command pool: {}")
+    }
+
+    CommandPool::CommandPool(aetherium::renderer::CommandPool&& other) noexcept ://NOLINT
+            _vulkan_device {other._vulkan_device},
+            _command_pool {other._command_pool} {
+        other._vulkan_device = nullptr;
+        other._command_pool = nullptr;
+    }
+
+    auto CommandPool::allocate_command_buffers(uint32_t count) const noexcept
+            -> kstd::Result<std::vector<CommandBuffer>> {
+        VkCommandBufferAllocateInfo allocate_info {};
+        allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocate_info.commandBufferCount = count;
+        allocate_info.commandPool = _command_pool;
+
+        std::vector<VkCommandBuffer> raw_command_buffers {count};
+        VK_CHECK(vkAllocateCommandBuffers(_vulkan_device->_virtual_device, &allocate_info, raw_command_buffers.data()),
+                 "Unable to allocate buffers {}")
+
+        std::vector<CommandBuffer> command_buffers {};
+        command_buffers.reserve(count);
+        for(auto raw_command_buffer : raw_command_buffers) {
+            command_buffers.emplace_back(this, raw_command_buffer);
+        }
+        return command_buffers;
+    }
+
+    CommandPool::~CommandPool() noexcept {
+        if(_command_pool != nullptr) {
+            vkDestroyCommandPool(_vulkan_device->_virtual_device, _command_pool, nullptr);
+            _command_pool = nullptr;
+        }
+    }
+
+    auto CommandPool::operator=(aetherium::renderer::CommandPool&& other) noexcept -> CommandPool& {
+        _vulkan_device = other._vulkan_device;
+        _command_pool = other._command_pool;
+        other._vulkan_device = nullptr;
+        other._command_pool = nullptr;
         return *this;
     }
 }// namespace aetherium::renderer

@@ -13,5 +13,15 @@
 // limitations under the License.
 
 #pragma once
+#include <aetherium/core/resource.hpp>
 
-#define UNUSED_PARAMETER(x) (void)(x)
+namespace aetherium::renderer {
+    class Shader final : public core::Resource {
+        public:
+        Shader(const fs::path& resource_path, const kstd::reflect::RTTI* runtime_type) :
+                core::Resource {resource_path, runtime_type} {
+        }
+
+        auto reload(const aetherium::core::ResourceManager &resource_manager) noexcept -> kstd::Result<void> override;
+    };
+}// namespace aetherium::renderer

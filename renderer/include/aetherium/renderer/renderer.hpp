@@ -14,4 +14,16 @@
 
 #pragma once
 
-#define UNUSED_PARAMETER(x) (void)(x)
+#include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan_context.hpp"
+
+namespace aetherium::renderer {
+    class VulkanRenderer {
+        VulkanDevice _vulkan_device;
+
+        public:
+        explicit VulkanRenderer(const VulkanContext& context);
+
+        [[nodiscard]] auto get_device() const noexcept -> const VulkanDevice&;
+    };
+}

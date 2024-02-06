@@ -19,10 +19,10 @@
 #include <kstd/option.hpp>
 #include <kstd/reflect/reflection.hpp>
 #include <kstd/result.hpp>
+#include <kstd/safe_alloc.hpp>
 #include <parallel_hashmap/phmap.h>
 #include <string>
 #include <type_traits>
-#include <kstd/safe_alloc.hpp>
 
 namespace fs = std::filesystem;
 
@@ -35,7 +35,7 @@ namespace aetherium::core {
         const kstd::reflect::RTTI* _runtime_type;
 
         public:
-        explicit Resource(fs::path resource_path, const kstd::reflect::RTTI* runtime_type) noexcept ://NOLINT
+        explicit Resource(const fs::path resource_path, const kstd::reflect::RTTI* runtime_type) noexcept ://NOLINT
                 _resource_path {std::move(resource_path)},
                 _runtime_type {runtime_type} {
         }
@@ -197,4 +197,4 @@ namespace aetherium::core {
          */
         [[nodiscard]] auto reload() noexcept -> kstd::Result<uint32_t>;
     };
-}// namespace aetherium
+}// namespace aetherium::core

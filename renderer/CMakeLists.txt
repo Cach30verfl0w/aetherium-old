@@ -46,3 +46,35 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/.
 target_link_libraries(${PROJECT_NAME} PUBLIC aetherium-core)
 target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../core/include")
 target_link_libraries(${PROJECT_NAME}-static PUBLIC aetherium-core)
+
+# Include SPIR-V headers
+FetchContent_Declare(
+        spirv-headers
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(spirv-headers)
+
+# Include SPIR-V tools
+FetchContent_Declare(
+        spirv-tools
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(spirv-tools)
+
+# Include glslang
+FetchContent_Declare(
+        glslang
+        GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(glslang)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/glslang-src/include")
+target_link_libraries(${PROJECT_NAME} PUBLIC glslang)
+target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/glslang-src/include")
+target_link_libraries(${PROJECT_NAME}-static PUBLIC glslang)

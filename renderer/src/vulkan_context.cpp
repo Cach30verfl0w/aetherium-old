@@ -53,8 +53,7 @@ namespace aetherium::renderer {
      * @author      Cedric Hammes
      * @since       04/02/2024
      */
-    VulkanContext::VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor,
-                                 uint8_t patch) {
+    VulkanContext::VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor, uint8_t patch) {
         using namespace std::string_literals;
 
         VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
@@ -119,8 +118,8 @@ namespace aetherium::renderer {
      * @author               Cedric Hammes
      * @since                04/02/2024
      */
-    auto VulkanContext::find_device(aetherium::renderer::DeviceSearchStrategy strategy, bool only_dedicated) noexcept
-            -> kstd::Result<VulkanDevice> {
+    auto VulkanContext::find_device(aetherium::renderer::DeviceSearchStrategy strategy,
+                                    bool only_dedicated) const noexcept -> kstd::Result<VulkanDevice> {
         using namespace std::string_literals;
 
         uint32_t device_count = 0;

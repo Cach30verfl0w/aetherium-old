@@ -13,11 +13,11 @@
 // limitations under the License.
 
 #pragma once
-#include <kstd/defaults.hpp>
-#include <stdexcept>
 #include <SDL.h>
 #include <fmt/format.h>
+#include <kstd/defaults.hpp>
 #include <kstd/result.hpp>
+#include <stdexcept>
 #include <string>
 
 namespace aetherium::core {
@@ -31,8 +31,8 @@ namespace aetherium::core {
         KSTD_NO_COPY(Window, Window)
 
         auto handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void>;
-        auto run_loop() const noexcept-> kstd::Result<void>;
+        auto run_loop() const noexcept -> kstd::Result<void>;
         auto get_window_handle() noexcept -> SDL_Window*;
         auto operator=(Window&& other) noexcept -> Window&;
     };
-}
+}// namespace aetherium::core

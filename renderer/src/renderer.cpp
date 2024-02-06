@@ -12,6 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include "aetherium/renderer/renderer.hpp"
 
-#define UNUSED_PARAMETER(x) (void)(x)
+namespace aetherium::renderer {
+    VulkanRenderer::VulkanRenderer(const aetherium::renderer::VulkanContext& context) :
+            _vulkan_device {} {
+        _vulkan_device = std::move(context.find_device(DeviceSearchStrategy::HIGHEST_PERFORMANCE).get_or_throw());
+    }
+
+    auto VulkanRenderer::get_device() const noexcept -> const VulkanDevice& {
+        return _vulkan_device;
+    }
+}

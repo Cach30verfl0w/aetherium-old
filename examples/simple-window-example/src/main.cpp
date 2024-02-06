@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/core/window.hpp>
 #include <aetherium/core/resource.hpp>
-#include <aetherium/renderer/vulkan_context.hpp>
+#include <aetherium/core/window.hpp>
+#include <aetherium/renderer/renderer.hpp>
 
 using namespace aetherium;
 
-
 auto main() -> int {
     auto window = core::Window {"Test window"};
-    auto resource_manager = core::ResourceManager {EXAMPLE_DIRECTORY};
     auto vulkan_context = renderer::VulkanContext {window, "Test App", 1, 0, 0};
-    auto device = vulkan_context.find_device(renderer::DeviceSearchStrategy::HIGHEST_PERFORMANCE);
-    device.throw_if_error();
-    printf("Name of the device: %s\n", device->get_name().c_str());
+    auto renderer = renderer::VulkanRenderer {vulkan_context};
+    printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
+
     window.run_loop();
     return 0;
 }

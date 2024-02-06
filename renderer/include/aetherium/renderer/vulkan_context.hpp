@@ -83,7 +83,7 @@ namespace aetherium::renderer {
          * @author               Cedric Hammes
          * @since                04/02/2024
          */
-        [[nodiscard]] auto find_device(DeviceSearchStrategy strategy, bool only_dedicated = false) noexcept
+        [[nodiscard]] auto find_device(DeviceSearchStrategy strategy, bool only_dedicated = false) const noexcept
                 -> kstd::Result<VulkanDevice>;
 
         ~VulkanContext() noexcept;
