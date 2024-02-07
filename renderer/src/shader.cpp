@@ -18,5 +18,6 @@
 namespace aetherium::renderer {
     auto Shader::reload(const aetherium::core::ResourceManager& resource_manager) noexcept -> kstd::Result<void> {
         UNUSED_PARAMETER(resource_manager);
+        return {};
     }
 }
