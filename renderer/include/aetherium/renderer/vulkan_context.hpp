@@ -49,11 +49,16 @@ namespace aetherium::renderer {
      */
     class VulkanContext final {
         VkInstance _instance {};
+        VkSurfaceKHR _surface {};
+        core::Window* _window {};
+
 #ifdef BUILD_DEBUG
         VkDebugUtilsMessengerEXT _debug_utils_messenger {};
 #endif
 
         public:
+        friend class Swapchain;
+
         /**
          * This constructor creates the vulkan constructor by the specified application name and the major, minor and
          * patch version of the application. If the engine is built in debug mode, the context also instruments the

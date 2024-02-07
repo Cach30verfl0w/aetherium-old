@@ -22,9 +22,11 @@ namespace aetherium::renderer {
      * @since  04/02/2024
      */
     VulkanDevice::VulkanDevice() noexcept :// NOLINT
-            _physical_device {},
-            _virtual_device {},
-            _properties {} {
+            _physical_device {nullptr},
+            _virtual_device {nullptr},
+            _properties {},
+            _submit_semaphore {nullptr},
+            _present_semaphore {nullptr} {
     }
 
     /**
@@ -38,13 +40,12 @@ namespace aetherium::renderer {
     VulkanDevice::VulkanDevice(VkPhysicalDevice physical_device) :// NOLINT
             _physical_device {physical_device} {
         constexpr auto queue_property = 1.0f;
-        const std::vector<const char*> device_extensions = {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
+        const std::vector<const char*> device_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
         vkGetPhysicalDeviceProperties(_physical_device, &_properties);
         // TODO: Get queue family properties and generate queue store
 
+        // Create device
         VkDeviceQueueCreateInfo device_queue_create_info {};
         device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         device_queue_create_info.queueCount = 1;
@@ -61,17 +62,39 @@ namespace aetherium::renderer {
         VK_CHECK_EX(vkCreateDevice(_physical_device, &device_create_info, nullptr, &_virtual_device),
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
+
+        // Create semaphores
+        VkSemaphoreCreateInfo semaphore_create_info {};
+        semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VK_CHECK_EX(vkCreateSemaphore(_virtual_device, &semaphore_create_info, nullptr, &_submit_semaphore),
+                    "Unable to create device: {}")
+        VK_CHECK_EX(vkCreateSemaphore(_virtual_device, &semaphore_create_info, nullptr, &_present_semaphore),
+                    "Unable to create device: {}")
     }
 
     VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
             _physical_device {other._physical_device},
             _virtual_device {other._virtual_device},
-            _properties {other._properties} {
+            _properties {other._properties},
+            _submit_semaphore {other._submit_semaphore},
+            _present_semaphore {other._present_semaphore} {
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
+        other._submit_semaphore = nullptr;
+        other._present_semaphore = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
+        if(_submit_semaphore != nullptr) {
+            vkDestroySemaphore(_virtual_device, _submit_semaphore, nullptr);
+            _submit_semaphore = nullptr;
+        }
+
+        if(_present_semaphore != nullptr) {
+            vkDestroySemaphore(_virtual_device, _present_semaphore, nullptr);
+            _present_semaphore = nullptr;
+        }
+
         if(_virtual_device != nullptr) {
             vkDestroyDevice(_virtual_device, nullptr);
             _virtual_device = nullptr;
@@ -131,8 +154,12 @@ namespace aetherium::renderer {
         _physical_device = other._physical_device;
         _virtual_device = other._virtual_device;
         _properties = other._properties;
+        _submit_semaphore = other._submit_semaphore;
+        _present_semaphore = other._present_semaphore;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
+        other._submit_semaphore = nullptr;
+        other._present_semaphore = nullptr;
         return *this;
     }
 
@@ -171,7 +198,7 @@ namespace aetherium::renderer {
     CommandBuffer::~CommandBuffer() noexcept {
         if(_command_buffer != nullptr) {
             vkFreeCommandBuffers(_command_pool->_vulkan_device->_virtual_device, _command_pool->_command_pool, 1,
-                                         &_command_buffer);
+                                 &_command_buffer);
             _command_buffer = nullptr;
         }
     }
@@ -253,7 +280,6 @@ namespace aetherium::renderer {
         command_buffers.reserve(count);
         for(auto raw_command_buffer : raw_command_buffers) {
             command_buffers.emplace_back(this, raw_command_buffer);
-
         }
         return command_buffers;
     }

@@ -17,10 +17,16 @@
 #include <fmt/format.h>
 #include <kstd/defaults.hpp>
 #include <kstd/result.hpp>
+#include <kstd/tuple.hpp>
 #include <stdexcept>
 #include <string>
 
 namespace aetherium::core {
+    struct WindowSize final {
+        int32_t width;
+        int32_t height;
+    };
+
     class Window final {
         SDL_Window* _window_handle;
 
@@ -30,9 +36,9 @@ namespace aetherium::core {
         ~Window() noexcept;
         KSTD_NO_COPY(Window, Window)
 
-        auto handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void>;
-        auto run_loop() const noexcept -> kstd::Result<void>;
-        auto get_window_handle() noexcept -> SDL_Window*;
+        [[nodiscard]] auto handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void>;
+        [[nodiscard]] auto run_loop() const noexcept -> kstd::Result<void>;
+        [[nodiscard]] auto get_window_handle() noexcept -> SDL_Window*;
         auto operator=(Window&& other) noexcept -> Window&;
     };
 }// namespace aetherium::core

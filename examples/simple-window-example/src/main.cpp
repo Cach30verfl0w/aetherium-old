@@ -25,6 +25,6 @@ auto main() -> int {
     auto renderer = renderer::VulkanRenderer {vulkan_context};
     printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
 
-    window.run_loop();
+    window.run_loop().throw_if_error();
     return 0;
 }

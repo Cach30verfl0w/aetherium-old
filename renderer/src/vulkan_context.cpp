@@ -76,7 +76,8 @@ namespace aetherium::renderer {
      * @author      Cedric Hammes
      * @since       04/02/2024
      */
-    VulkanContext::VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor, uint8_t patch) {
+    VulkanContext::VulkanContext(core::Window& window, const char* name, uint8_t major, uint8_t minor, uint8_t patch) :
+            _window {&window} {
         using namespace std::string_literals;
 
         VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
@@ -134,6 +135,12 @@ namespace aetherium::renderer {
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_instance), "Unable to create Vulkan context: {}")
         volkLoadInstance(_instance);
 
+        // Create surface
+        if(!SDL_Vulkan_CreateSurface(window.get_window_handle(), _instance, &_surface)) {
+            throw std::runtime_error {fmt::format("Unable to create vulkan context: {}", SDL_GetError())};
+        }
+
+        // Create debug utils messenger
 #ifdef BUILD_DEBUG
         SPDLOG_DEBUG("Initializing Vulkan debug utils for debug message handling");
         VkDebugUtilsMessengerCreateInfoEXT debug_utils_create_info {};
@@ -153,8 +160,10 @@ namespace aetherium::renderer {
     }
 
     VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& other) noexcept :// NOLINT
-            _instance {other._instance} {
+            _instance {other._instance},
+            _window {other._window} {
         other._instance = nullptr;
+        other._window = nullptr;
 #ifdef BUILD_DEBUG
         _debug_utils_messenger = other._debug_utils_messenger;
         other._debug_utils_messenger = nullptr;
@@ -162,8 +171,13 @@ namespace aetherium::renderer {
     }
 
     VulkanContext::~VulkanContext() noexcept {
+        if (_surface != nullptr) {
+            vkDestroySurfaceKHR(_instance, _surface, nullptr);
+            _surface = nullptr;
+        }
+
 #ifdef BUILD_DEBUG
-        if (_debug_utils_messenger != nullptr) {
+        if(_debug_utils_messenger != nullptr) {
             vkDestroyDebugUtilsMessengerEXT(_instance, _debug_utils_messenger, nullptr);
             _debug_utils_messenger = nullptr;
         }
@@ -226,6 +240,8 @@ namespace aetherium::renderer {
     auto VulkanContext::operator=(aetherium::renderer::VulkanContext&& other) noexcept -> VulkanContext& {
         _instance = other._instance;
         other._instance = nullptr;
+        _window = other._window;
+        other._window = nullptr;
 #ifdef BUILD_DEBUG
         _debug_utils_messenger = other._debug_utils_messenger;
         other._debug_utils_messenger = nullptr;

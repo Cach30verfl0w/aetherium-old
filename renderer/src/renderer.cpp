@@ -20,12 +20,7 @@ namespace aetherium::renderer {
         _vulkan_device = std::move(context.find_device(DeviceSearchStrategy::HIGHEST_PERFORMANCE).get_or_throw());
         _command_pool = CommandPool {&_vulkan_device};
         _command_buffer = std::move(_command_pool.allocate_command_buffers(1).get_or_throw().at(0));
-    }
-
-    VulkanRenderer::~VulkanRenderer() noexcept {
-        _command_buffer.~CommandBuffer();
-        _command_pool.~CommandPool();
-        _vulkan_device.~VulkanDevice();
+        _swapchain = Swapchain {context, &_vulkan_device};
     }
 
     auto VulkanRenderer::get_device() const noexcept -> const VulkanDevice& {

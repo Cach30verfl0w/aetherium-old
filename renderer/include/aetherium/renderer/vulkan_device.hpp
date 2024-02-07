@@ -42,10 +42,14 @@ namespace aetherium::renderer {
         VkPhysicalDevice _physical_device;
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
+        VkSemaphore _submit_semaphore;
+        VkSemaphore _present_semaphore;
 
         public:
+        friend class VulkanRenderer;
         friend class CommandPool;
         friend class CommandBuffer;
+        friend class Swapchain;
 
         /**
          * This constructor creates an empty vulkan device

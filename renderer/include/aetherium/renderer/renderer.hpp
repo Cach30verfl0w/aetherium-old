@@ -16,6 +16,7 @@
 
 #include "aetherium/renderer/vulkan_context.hpp"
 #include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan_swapchain.hpp"
 #include <kstd/tuple.hpp>
 
 namespace aetherium::renderer {
@@ -23,10 +24,10 @@ namespace aetherium::renderer {
         VulkanDevice _vulkan_device;
         CommandPool _command_pool;
         CommandBuffer _command_buffer;
+        Swapchain _swapchain;
 
         public:
         explicit VulkanRenderer(const VulkanContext& context);
-        ~VulkanRenderer() noexcept;
 
         [[nodiscard]] auto get_device() const noexcept -> const VulkanDevice&;
     };
