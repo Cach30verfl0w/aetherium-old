@@ -33,7 +33,6 @@ jobs:
           cmake -B cmake-build-debug
           -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
           -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
-          -G "Unix Makefiles"
       - name: Build project
         run: >-
           cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests 

@@ -50,11 +50,10 @@ jobs:
           -DCMAKE_CXX_COMPILER:FILEPATH="C:/Program Files/LLVM/bin/clang.exe"
           -DCMAKE_LINKER:FILEPATH="C:/Program Files/LLVM/bin/lld-link.exe"
           -DGTEST_USE_OWN_TR1_TUPLE=1
-          -G "Unix Makefiles"
       - name: Build project
         run: |
-          export THREADS=$(sysctl -n hw.ncpu)
-          cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel $THREADS
+          cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel 
+          ${{env.NUMBER_OF_PROCESSORS}}
       - name: Run tests
         working-directory: ${{github.workspace}}/cmake-build-debug
         run: ctest -C ${{inputs.build_type}} -R aetherium
