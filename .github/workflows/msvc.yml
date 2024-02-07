@@ -33,7 +33,6 @@ jobs:
           cmake -B cmake-build-debug
           -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
           -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
-          -DCMAKE_CXX_FLAGS=-stdlib=libc++
           -G "Unix Makefiles"
       - name: Build project
         run: >-

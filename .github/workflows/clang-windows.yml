@@ -15,6 +15,9 @@ on:
         required: false
         type: string
         default: "Debug"
+      clang_version:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -37,7 +40,6 @@ jobs:
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: ${{inputs.clang_version}}
-          env: true
           cached: ${{steps.cache-llvm.outputs.cache-hit}}
       - name: Prepare project
         run: >-
