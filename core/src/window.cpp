@@ -60,7 +60,12 @@ namespace aetherium::core {
                     }
                 }
 
-                // TODO: Redraw screen
+                // Redraw screen
+                if (_current_screen.has_value()) {
+                    if (const auto result = (*_current_screen)->render(); result.is_error()) {
+                        return result;
+                    }
+                }
             }
         }
     }

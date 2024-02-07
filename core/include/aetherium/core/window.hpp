@@ -19,6 +19,7 @@
 #include <kstd/defaults.hpp>
 #include <kstd/result.hpp>
 #include <kstd/tuple.hpp>
+#include <kstd/option.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -53,7 +54,7 @@ namespace aetherium::core {
         }
 
         [[nodiscard]] auto run_loop() const noexcept -> kstd::Result<void>;
-        [[nodiscard]] inline auto get_window_handle() noexcept -> SDL_Window*;
+        [[nodiscard]] auto get_window_handle() noexcept -> SDL_Window*;
         auto operator=(Window&& other) noexcept -> Window&;
     };
 }// namespace aetherium::core
