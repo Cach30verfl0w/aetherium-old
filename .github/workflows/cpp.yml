@@ -11,6 +11,7 @@ on:
         default: "Debug"
 
 jobs:
+  # Linux
   linux-x64-gcc:
     name: Linux x64 (GCC)
     uses: cach30verfl0w/aetherium/.github/workflows/gcc.yml@develop
@@ -29,11 +30,31 @@ jobs:
       cpp_std_version: ${{inputs.cpp_std_version}}
       clang_version: 15
       build_type: ${{inputs.build_type}}
+
+  # macOS
   macos-x64-clang:
     name: macOS x86 (Clang)
     uses: cach30verfl0w/aetherium/.github/workflows/clang-macos.yml@develop
     with:
       job_name: macOS x64 (Clang)
       image_name: macos-13
+      cpp_std_version: ${{inputs.cpp_std_version}}
+      build_type: ${{inputs.build_type}}
+
+  # Windows
+  window-x64-msvc:
+    name: Window x64 (MSVC)
+    uses: cach30verfl0w/aetherium/.github/workflows/msvc.yml@develop
+    with:
+      job_name: Window x64 (MSVC)
+      image_name: windows-2022
+      cpp_std_version: ${{inputs.cpp_std_version}}
+      build_type: ${{inputs.build_type}}
+  window-x64-clang:
+    name: Window x64 (MSVC)
+    uses: cach30verfl0w/aetherium/.github/workflows/clang-windows.yml@develop
+    with:
+      job_name: Window x64 (Clang)
+      image_name: windows-2022
       cpp_std_version: ${{inputs.cpp_std_version}}
       build_type: ${{inputs.build_type}}

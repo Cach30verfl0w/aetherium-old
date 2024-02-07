@@ -1,4 +1,4 @@
-name: Clang
+name: macOS Clang
 on:
   workflow_call:
     inputs:
@@ -11,56 +11,34 @@ on:
       cpp_std_version:
         required: true
         type: string
-      clang_version:
-        required: false
-        type: string
       build_type:
         required: false
         type: string
         default: "Debug"
 
-env:
-  CC: /usr/bin/clang-${{inputs.clang_version}}
-  CXX: /usr/bin/clang++-${{inputs.clang_version}}
 jobs:
   build:
     name: ${{inputs.job_name}}
     runs-on: ${{inputs.image_name}}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare CMake
-        uses: jwlawson/actions-setup-cmake@v1.14
-        with:
-          cmake-version: '3.22.x'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.204.0
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
-      - name: Cache LLVM & Clang
-        uses: actions/cache@v3
-        with:
-          path: ./llvm
-          key: llvm-${{inputs.clang_version}}
-      - name: Install LLVM & Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: ${{inputs.clang_version}}
-          env: true
-          cached: ${{steps.cache-llvm.outputs.cache-hit}}
       - name: Prepare project
         run: >-
           cmake -B cmake-build-debug
           -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
           -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
           -DCMAKE_CXX_FLAGS=-stdlib=libc++
-          -DGTEST_USE_OWN_TR1_TUPLE=1
           -G "Unix Makefiles"
       - name: Build project
-        run: |
-          export THREADS=$(grep -c ^processor | /proc/cpuinfo)
-          cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel $THREADS
+        run: >-
+          cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests 
+          --parallel ${{env.NUMBER_OF_PROCESSORS}}
       - name: Run tests
         working-directory: ${{github.workspace}}/cmake-build-debug
         run: ctest -C ${{inputs.build_type}} -R aetherium

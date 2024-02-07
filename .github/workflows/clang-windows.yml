@@ -1,4 +1,4 @@
-name: Clang
+name: macOS Clang
 on:
   workflow_call:
     inputs:
@@ -11,27 +11,17 @@ on:
       cpp_std_version:
         required: true
         type: string
-      clang_version:
-        required: false
-        type: string
       build_type:
         required: false
         type: string
         default: "Debug"
 
-env:
-  CC: /usr/bin/clang-${{inputs.clang_version}}
-  CXX: /usr/bin/clang++-${{inputs.clang_version}}
 jobs:
   build:
     name: ${{inputs.job_name}}
     runs-on: ${{inputs.image_name}}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare CMake
-        uses: jwlawson/actions-setup-cmake@v1.14
-        with:
-          cmake-version: '3.22.x'
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
@@ -54,12 +44,14 @@ jobs:
           cmake -B cmake-build-debug
           -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
           -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
-          -DCMAKE_CXX_FLAGS=-stdlib=libc++
+          -DCMAKE_C_COMPILER:FILEPATH="C:/Program Files/LLVM/bin/clang.exe"
+          -DCMAKE_CXX_COMPILER:FILEPATH="C:/Program Files/LLVM/bin/clang.exe"
+          -DCMAKE_LINKER:FILEPATH="C:/Program Files/LLVM/bin/lld-link.exe"
           -DGTEST_USE_OWN_TR1_TUPLE=1
           -G "Unix Makefiles"
       - name: Build project
         run: |
-          export THREADS=$(grep -c ^processor | /proc/cpuinfo)
+          export THREADS=$(sysctl -n hw.ncpu)
           cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel $THREADS
       - name: Run tests
         working-directory: ${{github.workspace}}/cmake-build-debug
