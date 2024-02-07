@@ -1,0 +1,21 @@
+name: C++
+on:
+  workflow_call:
+    cpp_std_version:
+      required: true
+      type: string
+    build_type:
+      required: false
+      type: string
+      default: "Debug"
+
+jobs:
+  linux-x64-gcc:
+    name: Linux x64 (GCC)
+    uses: cach30verfl0w/aetherium/.github/workflows/gcc.yml@develop
+    with:
+      name: Linux x64 (GCC)
+      image_name: ubuntu-22.04
+      cpp_std_version: ${{inputs.cpp_std_version}}
+      gcc_version: 12
+      build_type: ${{inputs.build_type}}
