@@ -20,3 +20,12 @@ jobs:
       cpp_std_version: ${{inputs.cpp_std_version}}
       gcc_version: 12
       build_type: ${{inputs.build_type}}
+  linux-x64-clang:
+    name: Linux x64 (Clang)
+    uses: cach30verfl0w/aetherium/.github/workflows/gcc.yml@develop
+    with:
+      job_name: Linux x64 (Clang)
+      image_name: ubuntu-22.04
+      cpp_std_version: ${{inputs.cpp_std_version}}
+      clang_version: 15
+      build_type: ${{inputs.build_type}}

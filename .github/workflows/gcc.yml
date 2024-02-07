@@ -54,4 +54,4 @@ jobs:
           cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel $THREADS
       - name: Run tests
         working-directory: ${{github.workspace}}/cmake-build-debug
-        run: ctest -C ${{inputs.build_type}}
+        run: ctest -C ${{inputs.build_type}} -R aetherium
