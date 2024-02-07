@@ -22,7 +22,7 @@ jobs:
       build_type: ${{inputs.build_type}}
   linux-x64-clang:
     name: Linux x64 (Clang)
-    uses: cach30verfl0w/aetherium/.github/workflows/gcc.yml@develop
+    uses: cach30verfl0w/aetherium/.github/workflows/clang.yml@develop
     with:
       job_name: Linux x64 (Clang)
       image_name: ubuntu-22.04
