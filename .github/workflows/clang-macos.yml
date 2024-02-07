@@ -1,4 +1,4 @@
-name: Clang
+name: macOS Clang
 on:
   workflow_call:
     inputs:
@@ -11,17 +11,11 @@ on:
       cpp_std_version:
         required: true
         type: string
-      clang_version:
-        required: false
-        type: string
       build_type:
         required: false
         type: string
         default: "Debug"
 
-env:
-  CC: /usr/bin/clang-${{inputs.clang_version}}
-  CXX: /usr/bin/clang++-${{inputs.clang_version}}
 jobs:
   build:
     name: ${{inputs.job_name}}
