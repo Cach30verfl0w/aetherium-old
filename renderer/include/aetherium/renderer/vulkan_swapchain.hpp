@@ -12,19 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/core/resource.hpp>
-#include <aetherium/core/window.hpp>
-#include <aetherium/renderer/renderer.hpp>
+#pragma once
+#include "aetherium/renderer/vulkan_device.hpp"
 
-using namespace aetherium;
+namespace aetherium::renderer {
+    class Swapchain final {
+        VkSwapchainKHR _swapchain;
 
-auto main() -> int {
-    spdlog::set_level(spdlog::level::debug);
-    auto window = core::Window {"Test window"};
-    auto vulkan_context = renderer::VulkanContext {window, "Test App", 1, 0, 0};
-    auto renderer = renderer::VulkanRenderer {vulkan_context};
-    printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
-
-    window.run_loop();
-    return 0;
+        public:
+        explicit Swapchain(VulkanDevice* vulkan_device);
+    };
 }

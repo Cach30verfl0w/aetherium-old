@@ -13,24 +13,28 @@
 // limitations under the License.
 
 #pragma once
+#include <fmt/format.h>
+#include <stdexcept>
 #include <string>
 #include <volk.h>
-#include <stdexcept>
-#include <fmt/format.h>
+
+#ifdef BUILD_DEBUG
+#include <spdlog/spdlog.h>
+#endif
 
 #define VK_CHECK_EX(x, m)                                                                                              \
-    if(const auto result = (x); x != VK_SUCCESS) {                                                                     \
+    if(const auto result = (x); result != VK_SUCCESS) {                                                                     \
         throw std::runtime_error {fmt::format((m), get_vulkan_error_message(result))};                                 \
     }
 
 #define VK_CHECK(x, m)                                                                                                 \
-    if(const auto result = (x); x != VK_SUCCESS) {                                                                     \
+    if(const auto result = (x); result != VK_SUCCESS) {                                                                     \
         return kstd::Error {fmt::format((m), get_vulkan_error_message(result))};                                       \
     }
 
 namespace aetherium::renderer {
     [[nodiscard]] constexpr auto get_vulkan_error_message(const VkResult result) noexcept -> std::string_view {
-        switch (result) {
+        switch(result) {
             case VK_SUCCESS: return "Success";
             case VK_ERROR_LAYER_NOT_PRESENT: return "Layer not present";
             case VK_ERROR_EXTENSION_NOT_PRESENT: return "Extension not present";
@@ -40,4 +44,4 @@ namespace aetherium::renderer {
             default: return "Unknown";
         }
     }
-}
+}// namespace aetherium::renderer

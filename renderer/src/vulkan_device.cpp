@@ -16,6 +16,18 @@
 
 namespace aetherium::renderer {
     /**
+     * This constructor creates an empty vulkan device
+     *
+     * @author Cedric Hammes
+     * @since  04/02/2024
+     */
+    VulkanDevice::VulkanDevice() noexcept :// NOLINT
+            _physical_device {},
+            _virtual_device {},
+            _properties {} {
+    }
+
+    /**
      * This constructor creates the vulkan device by the specified physical device.
      *
      * @param physical_device The handle to the physical device
@@ -26,6 +38,9 @@ namespace aetherium::renderer {
     VulkanDevice::VulkanDevice(VkPhysicalDevice physical_device) :// NOLINT
             _physical_device {physical_device} {
         constexpr auto queue_property = 1.0f;
+        const std::vector<const char*> device_extensions = {
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
 
         vkGetPhysicalDeviceProperties(_physical_device, &_properties);
         // TODO: Get queue family properties and generate queue store
@@ -41,16 +56,11 @@ namespace aetherium::renderer {
         device_create_info.pQueueCreateInfos = &device_queue_create_info;
         device_create_info.queueCreateInfoCount = 1;
         device_create_info.enabledLayerCount = 0;
-        device_create_info.enabledExtensionCount = 0;
+        device_create_info.enabledExtensionCount = device_extensions.size();
+        device_create_info.ppEnabledExtensionNames = device_extensions.data();
         VK_CHECK_EX(vkCreateDevice(_physical_device, &device_create_info, nullptr, &_virtual_device),
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
-    }
-
-    VulkanDevice::VulkanDevice() noexcept :// NOLINT
-            _physical_device {},
-            _virtual_device {},
-            _properties {} {
     }
 
     VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
@@ -68,6 +78,17 @@ namespace aetherium::renderer {
         }
     }
 
+    /**
+     * This function creates a one-time command buffer and executes the specified function. After the run, the
+     * command buffer get submitted into the queue and the program waits for the execution.
+     *
+     * @tparam F       The function type
+     * @param function The function itself
+     * @return         Nothing or an error
+     *
+     * @author         Cedric Hammes
+     * @since          06/02/2024
+     */
     template<typename F>
     auto VulkanDevice::emit_command_buffer(F&& function) const noexcept -> kstd::Result<void> {
         static_assert(std::is_convertible_v<F, std::function<void(CommandBuffer&)>>, "Invalid command buffer consumer");
@@ -115,6 +136,26 @@ namespace aetherium::renderer {
         return *this;
     }
 
+    /**
+     * This constructor creates an empty command buffer
+     *
+     * @author Cedric Hammes
+     * @since  06/02/2024
+     */
+    CommandBuffer::CommandBuffer() noexcept :// NOLINT
+            _command_pool {nullptr},
+            _command_buffer {nullptr} {
+    }
+
+    /**
+     * This constructor creates a command buffer with the specified command buffer and the command pool.
+     *
+     * @param command_pool   The command pool with which the buffer was allocated
+     * @param command_buffer The command buffer itself
+     *
+     * @author               Cedric Hammes
+     * @since                06/02/2024
+     */
     CommandBuffer::CommandBuffer(const CommandPool* command_pool, VkCommandBuffer command_buffer) :// NOLINT
             _command_pool {command_pool},
             _command_buffer {command_buffer} {
@@ -130,7 +171,7 @@ namespace aetherium::renderer {
     CommandBuffer::~CommandBuffer() noexcept {
         if(_command_buffer != nullptr) {
             vkFreeCommandBuffers(_command_pool->_vulkan_device->_virtual_device, _command_pool->_command_pool, 1,
-                                 &_command_buffer);
+                                         &_command_buffer);
             _command_buffer = nullptr;
         }
     }
@@ -143,6 +184,25 @@ namespace aetherium::renderer {
         return *this;
     }
 
+    /**
+     * This constructor creates an empty command pool
+     *
+     * @author Cedric Hammes
+     * @since  06/02/2024
+     */
+    CommandPool::CommandPool() noexcept :// NOLINT
+            _vulkan_device {nullptr},
+            _command_pool {nullptr} {
+    }
+
+    /**
+     * This constructor creates a command pool by the specified device
+     *
+     * @param vulkan_device The device for the pool
+     *
+     * @author              Cedric Hammes
+     * @since               06/02/2024
+     */
     CommandPool::CommandPool(const VulkanDevice* vulkan_device) :// NOLINT
             _vulkan_device {vulkan_device},
             _command_pool {} {
@@ -161,6 +221,23 @@ namespace aetherium::renderer {
         other._command_pool = nullptr;
     }
 
+    CommandPool::~CommandPool() noexcept {
+        if(_command_pool != nullptr) {
+            // TODO: Why is the pool on 0xfd5b260000000001, but Vulkan says 0xfd5b260000000002 is not destroyed?
+            vkDestroyCommandPool(_vulkan_device->_virtual_device, _command_pool, nullptr);
+            _command_pool = nullptr;
+        }
+    }
+
+    /**
+     * This function allocates the specified count of wrapped command buffers.
+     *
+     * @param count The count of newly allocated command buffers
+     * @return      The command buffers or an error
+     *
+     * @author      Cedric Hammes
+     * @since       06/02/2024
+     */
     auto CommandPool::allocate_command_buffers(uint32_t count) const noexcept
             -> kstd::Result<std::vector<CommandBuffer>> {
         VkCommandBufferAllocateInfo allocate_info {};
@@ -176,15 +253,9 @@ namespace aetherium::renderer {
         command_buffers.reserve(count);
         for(auto raw_command_buffer : raw_command_buffers) {
             command_buffers.emplace_back(this, raw_command_buffer);
+
         }
         return command_buffers;
-    }
-
-    CommandPool::~CommandPool() noexcept {
-        if(_command_pool != nullptr) {
-            vkDestroyCommandPool(_vulkan_device->_virtual_device, _command_pool, nullptr);
-            _command_pool = nullptr;
-        }
     }
 
     auto CommandPool::operator=(aetherium::renderer::CommandPool&& other) noexcept -> CommandPool& {

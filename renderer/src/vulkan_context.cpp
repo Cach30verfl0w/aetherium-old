@@ -20,6 +20,19 @@
 
 namespace aetherium::renderer {
     namespace {
+        auto enumerate_available_layers() -> kstd::Result<std::vector<std::string>> {
+            uint32_t count = 0;
+            VK_CHECK(vkEnumerateInstanceLayerProperties(&count, nullptr), "Unable to enumerate available layers: {}")
+            std::vector<VkLayerProperties> instance_layers {count};
+            VK_CHECK(vkEnumerateInstanceLayerProperties(&count, instance_layers.data()),
+                     "Unable to enumerate available layers: {}")
+            return kstd::streams::stream(instance_layers)
+                    .map([](const auto value) {
+                        return std::string {value.layerName};
+                    })
+                    .collect<std::vector>(kstd::streams::collectors::push_back);
+        }
+
         auto get_device_local_heap(VkPhysicalDevice device_handle) -> uint32_t {
             VkPhysicalDeviceMemoryProperties memory_properties {};
             vkGetPhysicalDeviceMemoryProperties(device_handle, &memory_properties);
@@ -40,6 +53,15 @@ namespace aetherium::renderer {
         };
     }// namespace
 
+    VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+                                                         VkDebugUtilsMessageTypeFlagsEXT types,
+                                                         const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+                                                         void* user_data) {
+        SPDLOG_DEBUG("Vulkan -> {}", callback_data->pMessage);
+        UNUSED_PARAMETER(user_data);
+        return VK_FALSE;
+    }
+
     /**
      * This constructor creates the vulkan constructor by the specified application name and the major, minor and patch
      * version of the application. If the engine is built in debug mode, the context also instruments the debug utils to
@@ -58,8 +80,22 @@ namespace aetherium::renderer {
 
         VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
         // TODO: Only use validation layer if debug build and validate existence of layer
-        const auto validation_layer_name = "VK_LAYER_KHRONOS_validation";
 
+        const std::vector enabled_layers = {
+#ifdef BUILD_DEBUG
+                "VK_LAYER_KHRONOS_validation"
+#endif
+        };
+
+        const auto available_layers = enumerate_available_layers();
+        for(const auto& layer_name : enabled_layers) {
+            std::string layer_name_str {layer_name};
+            if(std::find(available_layers->cbegin(), available_layers->cend(), layer_name_str) ==
+               available_layers->cend()) {
+                throw std::runtime_error {
+                        fmt::format("Unable to create vulkan context: Layer '{}' not available", layer_name_str)};
+            }
+        }
 
         // Get SDL window extensions
         uint32_t window_ext_count = 0;
@@ -71,6 +107,12 @@ namespace aetherium::renderer {
         if(!SDL_Vulkan_GetInstanceExtensions(window.get_window_handle(), &window_ext_count, extensions.data())) {
             throw std::runtime_error {"Unable to create vulkan context: Unable to get instance extension names"s};
         }
+
+#ifdef BUILD_DEBUG
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+        SPDLOG_DEBUG("Initializing Vulkan Context with {} extension(s) and {} layer(s)", extensions.size(),
+                     enabled_layers.size());
 
         // Create application
         VkApplicationInfo application_info = {};
@@ -86,17 +128,49 @@ namespace aetherium::renderer {
         instance_create_info.pApplicationInfo = &application_info;
         instance_create_info.enabledExtensionCount = extensions.size();
         instance_create_info.ppEnabledExtensionNames = extensions.data();
-        instance_create_info.enabledLayerCount = 0;
+        instance_create_info.enabledLayerCount = enabled_layers.size();
+        instance_create_info.ppEnabledLayerNames = enabled_layers.data();
         VK_CHECK_EX(vkCreateInstance(&instance_create_info, nullptr, &_instance), "Unable to create Vulkan context: {}")
         volkLoadInstance(_instance);
+
+#ifdef BUILD_DEBUG
+        SPDLOG_DEBUG("Initializing Vulkan debug utils for debug message handling");
+        VkDebugUtilsMessengerCreateInfoEXT debug_utils_create_info {};
+        debug_utils_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debug_utils_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debug_utils_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                              VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        debug_utils_create_info.pfnUserCallback = vulkan_debug_callback;
+
+        VK_CHECK_EX(
+                vkCreateDebugUtilsMessengerEXT(_instance, &debug_utils_create_info, nullptr, &_debug_utils_messenger),
+                "Unable to create Vulkan context: {}")
+#endif
     }
 
     VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& other) noexcept :// NOLINT
-            _instance {other._instance} {
+            _instance {other._instance},
+#ifdef BUILD_DEBUG
+            _debug_utils_messenger {other._debug_utils_messenger}
+#endif
+    {
         other._instance = nullptr;
+#ifdef BUILD_DEBUG
+        other._debug_utils_messenger = nullptr;
+#endif
     }
 
     VulkanContext::~VulkanContext() noexcept {
+#ifdef BUILD_DEBUG
+        if (_debug_utils_messenger != nullptr) {
+            vkDestroyDebugUtilsMessengerEXT(_instance, _debug_utils_messenger, nullptr);
+            _debug_utils_messenger = nullptr;
+        }
+#endif
+
         if(_instance != nullptr) {
             vkDestroyInstance(_instance, nullptr);
             _instance = nullptr;
@@ -154,6 +228,10 @@ namespace aetherium::renderer {
     auto VulkanContext::operator=(aetherium::renderer::VulkanContext&& other) noexcept -> VulkanContext& {
         _instance = other._instance;
         other._instance = nullptr;
+#ifdef BUILD_DEBUG
+        _debug_utils_messenger = other._debug_utils_messenger;
+        other._debug_utils_messenger = nullptr;
+#endif
         return *this;
     }
 }// namespace aetherium::renderer
