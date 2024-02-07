@@ -39,12 +39,12 @@ jobs:
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Cache LLVM & Clang
-        uses: actions@cache@v3
+        uses: actions/cache@v3
         with:
           path: ./llvm
           key: llvm-${{inputs.clang_version}}
       - name: Install LLVM & Clang
-        uses: KyleMales/install-llvm-action@v1
+        uses: KyleMayes/install-llvm-action@v1
         with:
           version: ${{inputs.clang_version}}
           env: true
