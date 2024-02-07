@@ -34,6 +34,6 @@ jobs:
     uses: cach30verfl0w/aetherium/.github/workflows/clang-macos.yml@develop
     with:
       job_name: macOS x64 (Clang)
-      image-name: macos-13
+      image_name: macos-13
       cpp_std_version: ${{inputs.cpp_std_version}}
       build_type: ${{inputs.build_type}}
