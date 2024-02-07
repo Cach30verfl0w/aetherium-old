@@ -44,23 +44,23 @@ namespace aetherium::core {
         }
     }
 
-    auto Window::handle_event(const SDL_Event* event) const noexcept -> kstd::Result<void> {
-        switch(event->type) {
-            default: return {};
-        }
-    }
-
     auto Window::run_loop() const noexcept -> kstd::Result<void> {
         SDL_Event event {};
         while (true) {
             while (SDL_PollEvent(&event)) {
+                // Close screen if event is quit event
                 if (event.type == SDL_QUIT) {
                     return {};
                 }
 
-                if (const auto result = handle_event(&event); result.is_error()) {
-                    return result;
+                // Notify handler about event
+                for(const auto& event_handler : this->_event_handlers) {
+                    if (const auto result = event_handler->handle_event(&event); result.is_error()) {
+                        return result;
+                    }
                 }
+
+                // TODO: Redraw screen
             }
         }
     }
