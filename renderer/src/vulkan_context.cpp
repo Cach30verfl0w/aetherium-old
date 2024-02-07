@@ -17,6 +17,7 @@
 #include <kstd/safe_alloc.hpp>
 #include <kstd/streams/collectors.hpp>
 #include <kstd/streams/stream.hpp>
+#include <spdlog/spdlog.h>
 
 namespace aetherium::renderer {
     namespace {
@@ -81,7 +82,7 @@ namespace aetherium::renderer {
         VK_CHECK_EX(volkInitialize(), "Unable to create Vulkan context: {}")
         // TODO: Only use validation layer if debug build and validate existence of layer
 
-        const std::vector enabled_layers = {
+        const std::vector<const char*> enabled_layers = {
 #ifdef BUILD_DEBUG
                 "VK_LAYER_KHRONOS_validation"
 #endif
@@ -152,13 +153,10 @@ namespace aetherium::renderer {
     }
 
     VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& other) noexcept :// NOLINT
-            _instance {other._instance},
-#ifdef BUILD_DEBUG
-            _debug_utils_messenger {other._debug_utils_messenger}
-#endif
-    {
+            _instance {other._instance} {
         other._instance = nullptr;
 #ifdef BUILD_DEBUG
+        _debug_utils_messenger = other._debug_utils_messenger;
         other._debug_utils_messenger = nullptr;
 #endif
     }
