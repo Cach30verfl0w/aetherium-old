@@ -15,7 +15,7 @@ jobs:
     name: Linux x64 (GCC)
     uses: cach30verfl0w/aetherium/.github/workflows/gcc.yml@develop
     with:
-      name: Linux x64 (GCC)
+      job_name: Linux x64 (GCC)
       image_name: ubuntu-22.04
       cpp_std_version: ${{inputs.cpp_std_version}}
       gcc_version: 12
