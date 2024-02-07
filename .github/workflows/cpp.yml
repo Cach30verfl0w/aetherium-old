@@ -42,7 +42,7 @@ jobs:
       build_type: ${{inputs.build_type}}
 
   # Windows
-  window-x64-msvc:
+  windows-x64-msvc:
     name: Windows x64 (MSVC)
     uses: cach30verfl0w/aetherium/.github/workflows/msvc.yml@develop
     with:
@@ -50,7 +50,7 @@ jobs:
       image_name: windows-2022
       cpp_std_version: ${{inputs.cpp_std_version}}
       build_type: ${{inputs.build_type}}
-  window-x64-clang:
+  windows-x64-clang:
     name: Windows x64 (Clang)
     uses: cach30verfl0w/aetherium/.github/workflows/clang-windows.yml@develop
     with:
