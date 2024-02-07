@@ -1,0 +1,50 @@
+name: Clang
+on:
+  workflow_call:
+    inputs:
+      job_name:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      cpp_std_version:
+        required: true
+        type: string
+      clang_version:
+        required: false
+        type: string
+      build_type:
+        required: false
+        type: string
+        default: "Debug"
+
+env:
+  CC: /usr/bin/clang-${{inputs.clang_version}}
+  CXX: /usr/bin/clang++-${{inputs.clang_version}}
+jobs:
+  build:
+    name: ${{inputs.job_name}}
+    runs-on: ${{inputs.image_name}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+      - name: Prepare project
+        run: >-
+          cmake -B cmake-build-debug
+          -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
+          -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
+          -DCMAKE_CXX_FLAGS=-stdlib=libc++
+          -G "Unix Makefiles"
+      - name: Build project
+        run: |
+          export THREADS=$(sysctl -n hw.ncpu)
+          cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel $THREADS
+      - name: Run tests
+        working-directory: ${{github.workspace}}/cmake-build-debug
+        run: ctest -C ${{inputs.build_type}} -R aetherium
