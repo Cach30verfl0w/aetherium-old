@@ -1,22 +1,23 @@
 name: GCC
 on:
   workflow_call:
-    job_name:
-      required: true
-      type: string
-    image_name:
-      required: true
-      type: string
-    cpp_std_version:
-      required: true
-      type: string
-    build_type:
-      required: false
-      type: string
-      default: "Debug"
-    gcc_version:
-      required: true
-      type: string
+    inputs:
+      job_name:
+        required: true
+        type: string
+      image_name:
+        required: true
+        type: string
+      cpp_std_version:
+        required: true
+        type: string
+      build_type:
+        required: false
+        type: string
+        default: "Debug"
+      gcc_version:
+        required: true
+        type: string
 
 env:
   CC: /usr/bin/gcc-${{inputs.gcc_version}}
