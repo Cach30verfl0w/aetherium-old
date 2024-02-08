@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #pragma once
-#include "aetherium/renderer/utils.hpp"
 #include "aetherium/utils.hpp"
 #include <kstd/defaults.hpp>
 #include <kstd/option.hpp>

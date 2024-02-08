@@ -14,6 +14,7 @@
 
 #include "aetherium/renderer/renderer.hpp"
 #include "aetherium/window.hpp"
+#include <spdlog/spdlog.h>
 
 using namespace aetherium;
 
