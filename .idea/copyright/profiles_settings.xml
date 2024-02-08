@@ -1,3 +1,7 @@
 <component name="CopyrightManager">
-  <settings default="Aetherium" />
+  <settings default="aetherium">
+    <module2copyright>
+      <element module="All" copyright="aetherium" />
+    </module2copyright>
+  </settings>
 </component>

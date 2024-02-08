@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <aetherium/core/resource.hpp>
+#include <aetherium/resource.hpp>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <utility>
 
-using namespace aetherium::core;
+using namespace aetherium;
 
 class TestResource final : public Resource {
     std::string _text;

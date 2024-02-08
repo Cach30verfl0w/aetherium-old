@@ -7,45 +7,83 @@ include(cmx-bootstrap)
 include(cmx-kstd-core)
 include(cmx-kstd-reflect)
 include(cmx-parallel-hashmap)
+include(cmx-sdl2)
+include(cmx-spdlog)
 cmx_include_scripts()
 
-# Pull in spdlog
-set(SPDLOG_BUILD_EXAMPLE OFF)
-set(SPDLOG_FMT_EXTERNAL ON)
-set(SPDLOG_FMT_EXTERNAL_HO ON)
-set(SPDLOG_NO_EXCEPTIONS ON)
+set(CMX_SDL2_VERSION SDL2)
+
+# Library
+cmx_add_library(${PROJECT_NAME} SHARED "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+cmx_include_kstd_core(${PROJECT_NAME} PUBLIC)
+cmx_include_kstd_reflect(${PROJECT_NAME} PUBLIC)
+cmx_include_phmap(${PROJECT_NAME} PUBLIC)
+cmx_include_sdl2(${PROJECT_NAME} PUBLIC)
+cmx_include_spdlog(${PROJECT_NAME} PUBLIC)
+
+cmx_add_library(${PROJECT_NAME}-static STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+cmx_include_kstd_core(${PROJECT_NAME}-static PUBLIC)
+cmx_include_kstd_reflect(${PROJECT_NAME}-static PUBLIC)
+cmx_include_phmap(${PROJECT_NAME}-static PUBLIC)
+cmx_include_sdl2(${PROJECT_NAME}-static PUBLIC)
+cmx_include_spdlog(${PROJECT_NAME}-static PUBLIC)
+
+# Include SPIR-V headers
 FetchContent_Declare(
-        spdlog
-        GIT_REPOSITORY https://github.com/gabime/spdlog.git
-        GIT_TAG v1.x
+        spirv-headers
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Headers.git
+        GIT_TAG main
         GIT_PROGRESS true
 )
-FetchContent_Populate(spdlog)
+FetchContent_MakeAvailable(spirv-headers)
+
+# Include SPIR-V tools
+FetchContent_Declare(
+        spirv-tools
+        GIT_REPOSITORY https://github.com/KhronosGroup/SPIRV-Tools.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(spirv-tools)
+
+# Include glslang
+FetchContent_Declare(
+        glslang
+        GIT_REPOSITORY https://github.com/KhronosGroup/glslang.git
+        GIT_TAG main
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(glslang)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/glslang-src/include")
+target_link_libraries(${PROJECT_NAME} PUBLIC glslang)
+target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/glslang-src/include")
+target_link_libraries(${PROJECT_NAME}-static PUBLIC glslang)
+
+# Include volk
+FetchContent_Declare(
+        volk
+        GIT_REPOSITORY https://github.com/zeux/volk.git
+        GIT_TAG master
+        GIT_PROGRESS true
+)
+FetchContent_MakeAvailable(volk)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/volk-src/include")
+target_link_libraries(${PROJECT_NAME} PUBLIC volk)
+target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/volk-src/include")
+target_link_libraries(${PROJECT_NAME}-static PUBLIC volk)
 
 # Include unit tests
 cmx_add_tests(${PROJECT_NAME}-tests "${CMAKE_CURRENT_SOURCE_DIR}/tests")
 cmx_include_kstd_core(${PROJECT_NAME}-tests)
 target_compile_definitions(${PROJECT_NAME}-tests PRIVATE TESTS_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/tests")
+target_link_libraries(${PROJECT_NAME}-tests PRIVATE ${PROJECT_NAME}-static)
+add_dependencies(${PROJECT_NAME}-tests ${PROJECT_NAME}-static)
 
-# Include modules
-message("Include modules/subprojects")
-file(GLOB PROJECTS "${CMAKE_CURRENT_SOURCE_DIR}/*")
-foreach(PROJECT ${PROJECTS})
-    if (EXISTS "${PROJECT}/CMakeLists.txt")
-        get_filename_component(MODULE_NAME ${PROJECT} NAME)
-        message(STATUS "Add subproject ${MODULE_NAME} (${PROJECT})")
-        add_subdirectory(${PROJECT})
-        target_link_libraries(${PROJECT_NAME}-tests PRIVATE aetherium-${MODULE_NAME}-static)
-        add_dependencies(${PROJECT_NAME}-tests aetherium-${MODULE_NAME}-static)
-    endif()
-endforeach()
-
-# Include examples
-message("Include examples")
-file(GLOB EXAMPLES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/examples/*")
-foreach(EXAMPLE_DIR ${EXAMPLES_DIR})
-    get_filename_component(EXAMPLE_NAME ${EXAMPLE_DIR} NAME)
-    message(STATUS "Add example ${EXAMPLE_NAME} (${EXAMPLE_DIR})")
-    add_subdirectory(${EXAMPLE_DIR})
-    target_compile_definitions(${EXAMPLE_NAME} PRIVATE EXAMPLE_DIRECTORY="${EXAMPLE_DIR}")
-endforeach()
+# Example application
+cmx_add_application(simple-window-example "${CMAKE_CURRENT_SOURCE_DIR}/examples/simple-window-example/")
+target_link_libraries(simple-window-example PRIVATE ${PROJECT_NAME}-static)
+add_dependencies(simple-window-example ${PROJECT_NAME}-static)
