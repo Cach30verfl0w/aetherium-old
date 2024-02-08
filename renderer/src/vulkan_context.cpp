@@ -15,8 +15,6 @@
 #include "aetherium/renderer/vulkan_context.hpp"
 #include <SDL_vulkan.h>
 #include <kstd/safe_alloc.hpp>
-#include <kstd/streams/collectors.hpp>
-#include <kstd/streams/stream.hpp>
 #include <spdlog/spdlog.h>
 
 namespace aetherium::renderer {
@@ -27,11 +25,12 @@ namespace aetherium::renderer {
             std::vector<VkLayerProperties> instance_layers {count};
             VK_CHECK(vkEnumerateInstanceLayerProperties(&count, instance_layers.data()),
                      "Unable to enumerate available layers: {}")
-            return kstd::streams::stream(instance_layers)
-                    .map([](const auto value) {
-                        return std::string {value.layerName};
-                    })
-                    .collect<std::vector>(kstd::streams::collectors::push_back);
+
+            std::vector<std::string> layer_names {};
+            for(const auto& properties : instance_layers) {
+                layer_names.emplace_back(properties.layerName);
+            }
+            return layer_names;
         }
 
         auto get_device_local_heap(VkPhysicalDevice device_handle) -> uint32_t {
@@ -171,7 +170,7 @@ namespace aetherium::renderer {
     }
 
     VulkanContext::~VulkanContext() noexcept {
-        if (_surface != nullptr) {
+        if(_surface != nullptr) {
             vkDestroySurfaceKHR(_instance, _surface, nullptr);
             _surface = nullptr;
         }
@@ -212,27 +211,13 @@ namespace aetherium::renderer {
         VK_CHECK(vkEnumeratePhysicalDevices(_instance, &device_count, nullptr), "Unable to create device: {}")
         std::vector<VkPhysicalDevice> devices {device_count};
         VK_CHECK(vkEnumeratePhysicalDevices(_instance, &device_count, devices.data()), "Unable to create device: {}")
-
-        // clang-format off
-        const auto sorted_devices = kstd::streams::stream(devices)
-            .sort(compare_by_local_heap)
-            .filter([&](const VkPhysicalDevice& device) -> bool {
-                if (only_dedicated) {
-                    VkPhysicalDeviceProperties properties {};
-                    vkGetPhysicalDeviceProperties(device, &properties);
-                    return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-                }
-                return true;
-            })
-            .collect<std::vector>(kstd::streams::collectors::push_back);
-        // clang-format on
+        std::sort(devices.begin(), devices.end(), compare_by_local_heap);
 
         // Get physical device and create
         VkPhysicalDevice physical_device;
         switch(strategy) {
-            case DeviceSearchStrategy::HIGHEST_PERFORMANCE: physical_device = sorted_devices.at(0); break;
-            case DeviceSearchStrategy::LOWEST_PERFORMANCE:
-                physical_device = sorted_devices.at(sorted_devices.size() - 1);
+            case DeviceSearchStrategy::HIGHEST_PERFORMANCE: physical_device = devices.at(0); break;
+            case DeviceSearchStrategy::LOWEST_PERFORMANCE: physical_device = devices.at(devices.size() - 1);
         }
         return kstd::try_construct<VulkanDevice>(physical_device);
     }
