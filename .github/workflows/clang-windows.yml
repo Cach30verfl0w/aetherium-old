@@ -41,15 +41,17 @@ jobs:
         with:
           version: ${{inputs.clang_version}}
           cached: ${{steps.cache-llvm.outputs.cache-hit}}
+      - uses: seanmiddleditch/gha-setup-ninja@master
       - name: Prepare project
         run: >-
-          cmake -B cmake-build-debug
+          cmake -G Ninja -B cmake-build-debug
           -DCMAKE_CXX_STANDARD=${{inputs.cpp_std_version}}
           -DCMAKE_BUILD_TYPE=${{inputs.build_type}}
           -DCMAKE_C_COMPILER:FILEPATH="C:/Program Files/LLVM/bin/clang.exe"
           -DCMAKE_CXX_COMPILER:FILEPATH="C:/Program Files/LLVM/bin/clang.exe"
           -DCMAKE_LINKER:FILEPATH="C:/Program Files/LLVM/bin/lld-link.exe"
           -DGTEST_USE_OWN_TR1_TUPLE=1
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=1
       - name: Build project
         run: |
           cmake --build cmake-build-debug --config ${{inputs.build_type}} --target aetherium-tests --parallel 
