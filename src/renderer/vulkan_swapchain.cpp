@@ -24,12 +24,14 @@ namespace aetherium::renderer {
 
     Swapchain::Swapchain(const VulkanContext& context, const VulkanDevice* vulkan_device) :// NOLINT
             _vulkan_device {vulkan_device} {
+        // Get window bounds
         int32_t width = 0;
         int32_t height = 1;
         SDL_GetWindowSize(context._window->get_window_handle(), &width, &height);
         VkExtent2D window_size {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        auto swapchain_create_info = VkSwapchainCreateInfoKHR {};
+        // Create swapchain
+        VkSwapchainCreateInfoKHR swapchain_create_info = {};
         swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         swapchain_create_info.surface = context._surface;
         swapchain_create_info.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
@@ -44,6 +46,35 @@ namespace aetherium::renderer {
         swapchain_create_info.imageExtent = window_size;
         VK_CHECK_EX(vkCreateSwapchainKHR(_vulkan_device->_virtual_device, &swapchain_create_info, nullptr, &_swapchain),
                     "Unable to create swapchain: {}")
+
+        // Get images
+        uint32_t image_count = 0;
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, nullptr), "Unable to get images: {}")
+        _images.resize(image_count);
+        _image_views.resize(image_count);
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, _images.data()), "Unable to get images: {}")
+
+        // Create image views from images
+        for(auto i = 0; i < _images.size(); i++) {
+            VkImageViewCreateInfo image_view_create_info {};
+            image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            image_view_create_info.image = _images[i];
+            image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+            image_view_create_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+            image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+            image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            image_view_create_info.subresourceRange.baseMipLevel = 0;
+            image_view_create_info.subresourceRange.levelCount = 1;
+            image_view_create_info.subresourceRange.baseArrayLayer = 0;
+            image_view_create_info.subresourceRange.layerCount = 1;
+
+            //TODO: error handling
+            VK_CHECK_EX(vkCreateImageView(_vulkan_device->_virtual_device, &image_view_create_info, nullptr, _image_views.data() + i), "Unable to create swapchain: {}")
+        }
     }
 
     Swapchain::~Swapchain() noexcept {
@@ -52,13 +83,6 @@ namespace aetherium::renderer {
                 vkDestroyImageView(_vulkan_device->_virtual_device, image_view, nullptr);
             }
             _image_views = {};
-        }
-
-        if(!_images.empty()) {
-            for(auto& image : _images) {
-                vkDestroyImage(_vulkan_device->_virtual_device, image, nullptr);
-            }
-            _images = {};
         }
 
         if(_swapchain != nullptr) {
@@ -92,6 +116,10 @@ namespace aetherium::renderer {
 
     auto Swapchain::current_image_view() const noexcept -> VkImageView {
         return _image_views.at(_current_image_index);
+    }
+
+    auto Swapchain::current_image_index() const noexcept -> uint32_t {
+        return _current_image_index;
     }
 
     auto Swapchain::operator=(aetherium::renderer::Swapchain&& other) noexcept -> Swapchain& {

@@ -18,16 +18,20 @@
 #include "aetherium/renderer/vulkan_device.hpp"
 #include "aetherium/renderer/vulkan_swapchain.hpp"
 #include <kstd/tuple.hpp>
+#include <kstd/result.hpp>
 
 namespace aetherium::renderer {
     class VulkanRenderer {
+        VulkanContext& _vulkan_context;
         VulkanDevice _vulkan_device;
         CommandPool _command_pool;
         CommandBuffer _command_buffer;
         Swapchain _swapchain;
 
         public:
-        explicit VulkanRenderer(const VulkanContext& context);
+        explicit VulkanRenderer(VulkanContext& context);
+
+        [[nodiscard]] auto render() noexcept -> kstd::Result<void>;
 
         [[nodiscard]] auto get_device() const noexcept -> const VulkanDevice&;
     };

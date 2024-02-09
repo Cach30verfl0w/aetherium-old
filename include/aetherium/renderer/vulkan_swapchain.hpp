@@ -17,14 +17,17 @@
 #include "aetherium/renderer/vulkan_context.hpp"
 
 namespace aetherium::renderer {
+    // TODO: Implement dereference to acquire handle
     class Swapchain final {
         const VulkanDevice* _vulkan_device;
         VkSwapchainKHR _swapchain;
-        std::vector<VkImageView> _image_views;
-        std::vector<VkImage> _images;
+        std::vector<VkImageView> _image_views {};
+        std::vector<VkImage> _images {};
         uint32_t _current_image_index;
 
         public:
+        friend class VulkanRenderer;
+
         Swapchain() noexcept;
         explicit Swapchain(const VulkanContext& context, const VulkanDevice* vulkan_device);
         Swapchain(Swapchain&& other) noexcept;
@@ -32,8 +35,9 @@ namespace aetherium::renderer {
         KSTD_NO_COPY(Swapchain, Swapchain);
 
         [[nodiscard]] auto next_image() noexcept -> kstd::Result<void>;
-        [[nodiscard]] inline auto current_image() const noexcept -> VkImage;
-        [[nodiscard]] inline auto current_image_view() const noexcept -> VkImageView;
+        [[nodiscard]] auto current_image() const noexcept -> VkImage;
+        [[nodiscard]] auto current_image_view() const noexcept -> VkImageView;
+        [[nodiscard]] auto current_image_index() const noexcept -> uint32_t;
 
         auto operator=(Swapchain&& other) noexcept -> Swapchain&;
     };

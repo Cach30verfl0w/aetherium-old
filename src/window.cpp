@@ -55,7 +55,7 @@ namespace aetherium {
 
                 // Notify handler about event
                 for(const auto& event_handler : this->_event_handlers) {
-                    if (const auto result = event_handler->handle_event(&event); result.is_error()) {
+                    if (const auto result = event_handler->handle_event(this, &event); result.is_error()) {
                         return result;
                     }
                 }
@@ -74,9 +74,29 @@ namespace aetherium {
         return _window_handle;
     }
 
+    auto Window::get_current_screen() const noexcept -> kstd::Option<std::shared_ptr<Screen>> {
+        if (_current_screen.is_empty()) {
+            return kstd::Option<std::shared_ptr<Screen>> {};
+        }
+        return {*_current_screen};
+    }
+
     auto Window::operator=(aetherium::Window&& other) noexcept -> Window& {
         _window_handle = other._window_handle;
         other._window_handle = nullptr;
         return *this;
+    }
+
+    auto ScreenEventHandler::handle_event(const aetherium::Window* window, SDL_Event* event) -> kstd::Result<void> {
+        auto screen = window->get_current_screen();
+        if (screen.has_value()) {
+            if (const auto render_result = screen.get()->render(); render_result.is_error()) {
+                return render_result;
+            }
+        }
+
+        switch (event->type) {
+            default: return {};
+        }
     }
 }// namespace aetherium::core

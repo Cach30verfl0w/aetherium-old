@@ -39,8 +39,10 @@ namespace aetherium::renderer {
         VkPhysicalDevice _physical_device;
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
-        VkSemaphore _submit_semaphore;
-        VkSemaphore _present_semaphore;
+        // TODO: Redesign store for semaphores
+        VkSemaphore _submit_semaphore; // Image Available Semaphore
+        VkSemaphore _present_semaphore; // Rendering Done Semaphore
+        VkQueue _graphics_queue; // TODO: Support multiple queues
 
         public:
         friend class VulkanRenderer;
@@ -118,6 +120,7 @@ namespace aetherium::renderer {
         VkCommandBuffer _command_buffer;
 
         public:
+        friend class VulkanRenderer;
         friend class VulkanDevice;
 
         /**
@@ -142,6 +145,9 @@ namespace aetherium::renderer {
         CommandBuffer(CommandBuffer&& other) noexcept;
         KSTD_NO_COPY(CommandBuffer, CommandBuffer);
 
+        auto begin(VkCommandBufferUsageFlags usage = 0) -> kstd::Result<void>;
+        auto end() -> kstd::Result<void>;
+
         auto operator=(CommandBuffer&& other) noexcept -> CommandBuffer&;
     };
 
@@ -157,6 +163,7 @@ namespace aetherium::renderer {
         VkCommandPool _command_pool;
 
         public:
+        friend class VulkanRenderer;
         friend class CommandBuffer;
 
         /**

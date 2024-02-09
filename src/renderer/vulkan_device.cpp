@@ -46,6 +46,14 @@ namespace aetherium::renderer {
         // TODO: Get queue family properties and generate queue store
 
         // Create device
+        VkPhysicalDeviceVulkan13Features vulkan13_features {};
+        vulkan13_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        vulkan13_features.dynamicRendering = VK_TRUE;
+
+        VkPhysicalDeviceFeatures2 features {};
+        features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features.pNext = &vulkan13_features;
+
         VkDeviceQueueCreateInfo device_queue_create_info {};
         device_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         device_queue_create_info.queueCount = 1;
@@ -53,6 +61,7 @@ namespace aetherium::renderer {
         device_queue_create_info.pQueuePriorities = &queue_property;
 
         VkDeviceCreateInfo device_create_info {};
+        device_create_info.pNext = &features;
         device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         device_create_info.pQueueCreateInfos = &device_queue_create_info;
         device_create_info.queueCreateInfoCount = 1;
@@ -62,6 +71,7 @@ namespace aetherium::renderer {
         VK_CHECK_EX(vkCreateDevice(_physical_device, &device_create_info, nullptr, &_virtual_device),
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
+        vkGetDeviceQueue(_virtual_device, 0, 0, &_graphics_queue);
 
         // Create semaphores
         VkSemaphoreCreateInfo semaphore_create_info {};
@@ -77,11 +87,13 @@ namespace aetherium::renderer {
             _virtual_device {other._virtual_device},
             _properties {other._properties},
             _submit_semaphore {other._submit_semaphore},
-            _present_semaphore {other._present_semaphore} {
+            _present_semaphore {other._present_semaphore},
+            _graphics_queue {other._graphics_queue} {
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._submit_semaphore = nullptr;
         other._present_semaphore = nullptr;
+        other._graphics_queue = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
@@ -130,6 +142,7 @@ namespace aetherium::renderer {
         // Perform operation
         VkCommandBufferBeginInfo command_buffer_begin_info {};
         command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VK_CHECK(vkBeginCommandBuffer(command_buffer._command_buffer, &command_buffer_begin_info),
                  "Unable to submit one-time command buffer: {}")
         function(&command_buffer);
@@ -156,10 +169,12 @@ namespace aetherium::renderer {
         _properties = other._properties;
         _submit_semaphore = other._submit_semaphore;
         _present_semaphore = other._present_semaphore;
+        _graphics_queue = other._graphics_queue;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._submit_semaphore = nullptr;
         other._present_semaphore = nullptr;
+        other._graphics_queue = nullptr;
         return *this;
     }
 
@@ -203,6 +218,21 @@ namespace aetherium::renderer {
         }
     }
 
+    auto CommandBuffer::begin(VkCommandBufferUsageFlags usage) -> kstd::Result<void> {
+        VkCommandBufferBeginInfo command_buffer_begin_info {};
+        command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        command_buffer_begin_info.flags = usage;
+
+        VK_CHECK(vkBeginCommandBuffer(_command_buffer, &command_buffer_begin_info),
+                 "Unable to begin command buffer: {}")
+        return {};
+    }
+
+    auto CommandBuffer::end() -> kstd::Result<void> {
+        VK_CHECK(vkEndCommandBuffer(_command_buffer), "Unable to end command buffer: {}")
+        return {};
+    }
+
     auto CommandBuffer::operator=(aetherium::renderer::CommandBuffer&& other) noexcept -> CommandBuffer& {
         _command_pool = other._command_pool;
         _command_buffer = other._command_buffer;
@@ -235,6 +265,7 @@ namespace aetherium::renderer {
             _command_pool {} {
         VkCommandPoolCreateInfo command_pool_create_info {};
         command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         command_pool_create_info.queueFamilyIndex = 0;
         VK_CHECK_EX(
                 vkCreateCommandPool(vulkan_device->_virtual_device, &command_pool_create_info, nullptr, &_command_pool),
@@ -250,7 +281,6 @@ namespace aetherium::renderer {
 
     CommandPool::~CommandPool() noexcept {
         if(_command_pool != nullptr) {
-            // TODO: Why is the pool on 0xfd5b260000000001, but Vulkan says 0xfd5b260000000002 is not destroyed?
             vkDestroyCommandPool(_vulkan_device->_virtual_device, _command_pool, nullptr);
             _command_pool = nullptr;
         }

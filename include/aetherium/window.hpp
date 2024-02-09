@@ -24,16 +24,26 @@
 #include <string>
 
 namespace aetherium {
+    class Window;
+
     class EventHandler {
         public:
         virtual ~EventHandler() noexcept = default;
-        [[nodiscard]] virtual auto handle_event(SDL_Event* event) -> kstd::Result<void> = 0;
+        [[nodiscard]] virtual auto handle_event(const Window* window, SDL_Event* event) -> kstd::Result<void> = 0;
+    };
+
+    class ScreenEventHandler final : public EventHandler {
+        public:
+        ScreenEventHandler() noexcept = default;
+        ~ScreenEventHandler() noexcept override = default;
+        KSTD_DEFAULT_MOVE_COPY(ScreenEventHandler, ScreenEventHandler);
+        auto handle_event(const aetherium::Window *window, SDL_Event *event) -> kstd::Result<void> override;
     };
 
     class Window final {
         SDL_Window* _window_handle;
         std::vector<std::unique_ptr<EventHandler>> _event_handlers {};
-        kstd::Option<std::unique_ptr<Screen>> _current_screen {};
+        kstd::Option<std::shared_ptr<Screen>> _current_screen {};
 
         public:
         explicit Window(std::string_view window_title, int32_t width = 800, int32_t height = 600);
@@ -44,17 +54,18 @@ namespace aetherium {
         template<typename SCREEN, typename... ARGS>
         [[nodiscard]] auto set_screen(ARGS&&... args) {
             static_assert(std::is_base_of_v<Screen, SCREEN>, "Specified screen isn't a real screen!");
-            _current_screen = {std::make_unique<SCREEN>(std::forward<ARGS>(args)...)};
+            _current_screen = {std::make_shared<SCREEN>(std::forward<ARGS>(args)...)};
         }
 
         template<typename HANDLER, typename... ARGS>
         [[nodiscard]] auto add_event_handler(ARGS&&... args) noexcept {
             static_assert(std::is_base_of_v<EventHandler, HANDLER>, "Specified handler isn't a real event handler!");
-            _event_handlers.push_back(std::make_unique<HANDLER>(this, std::forward<ARGS>(args)...));
+            _event_handlers.push_back(std::make_unique<HANDLER>(std::forward<ARGS>(args)...));
         }
 
         [[nodiscard]] auto run_loop() const noexcept -> kstd::Result<void>;
         [[nodiscard]] auto get_window_handle() noexcept -> SDL_Window*;
+        [[nodiscard]] auto get_current_screen() const noexcept -> kstd::Option<std::shared_ptr<Screen>>;
         auto operator=(Window&& other) noexcept -> Window&;
     };
 }// namespace aetherium::core

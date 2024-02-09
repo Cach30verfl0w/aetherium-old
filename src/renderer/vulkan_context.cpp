@@ -57,7 +57,8 @@ namespace aetherium::renderer {
                                                          VkDebugUtilsMessageTypeFlagsEXT types,
                                                          const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
                                                          void* user_data) {
-        SPDLOG_DEBUG("Vulkan -> {}", callback_data->pMessage);
+        printf("%s\n", callback_data->pMessage);
+        // SPDLOG_DEBUG("Vulkan -> {}", callback_data->pMessage);
         UNUSED_PARAMETER(user_data);
         return VK_FALSE;
     }
@@ -152,9 +153,9 @@ namespace aetherium::renderer {
                                               VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         debug_utils_create_info.pfnUserCallback = vulkan_debug_callback;
 
-        VK_CHECK_EX(
+        /*VK_CHECK_EX(
                 vkCreateDebugUtilsMessengerEXT(_instance, &debug_utils_create_info, nullptr, &_debug_utils_messenger),
-                "Unable to create Vulkan context: {}")
+                "Unable to create Vulkan context: {}")*/
 #endif
     }
 
@@ -232,5 +233,9 @@ namespace aetherium::renderer {
         other._debug_utils_messenger = nullptr;
 #endif
         return *this;
+    }
+
+    auto VulkanContext::get_window() noexcept -> Window* {
+        return _window;
     }
 }// namespace aetherium::renderer

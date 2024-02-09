@@ -18,6 +18,23 @@
 
 using namespace aetherium;
 
+class DefaultScreen final : public Screen {
+    renderer::VulkanRenderer* _vulkan_renderer;
+
+    public:
+    DefaultScreen(renderer::VulkanRenderer* vulkan_renderer) noexcept :
+            Screen("Main Menu"),
+            _vulkan_renderer {vulkan_renderer} {
+    }
+
+    auto render() noexcept -> kstd::Result<void> override {
+        if (auto result = _vulkan_renderer->render(); result.is_error()) {
+            return result;
+        }
+        return {};
+    }
+};
+
 #undef main
 auto main() -> int {
     spdlog::set_level(spdlog::level::debug);
@@ -25,6 +42,9 @@ auto main() -> int {
     auto vulkan_context = renderer::VulkanContext {window, "Test App", 1, 0, 0};
     auto renderer = renderer::VulkanRenderer {vulkan_context};
     printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
+
+    window.add_event_handler<ScreenEventHandler>();
+    window.set_screen<DefaultScreen>(&renderer);
 
     window.run_loop().throw_if_error();
     return 0;

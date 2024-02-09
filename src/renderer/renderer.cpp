@@ -13,14 +13,141 @@
 // limitations under the License.
 
 #include "aetherium/renderer/renderer.hpp"
+#include <array>
 
 namespace aetherium::renderer {
-    VulkanRenderer::VulkanRenderer(const aetherium::renderer::VulkanContext& context) :
+    VulkanRenderer::VulkanRenderer(aetherium::renderer::VulkanContext& context) :
+            _vulkan_context {context},
             _vulkan_device {} {
         _vulkan_device = std::move(context.find_device(DeviceSearchStrategy::HIGHEST_PERFORMANCE).get_or_throw());
         _command_pool = CommandPool {&_vulkan_device};
         _command_buffer = std::move(_command_pool.allocate_command_buffers(1).get_or_throw().at(0));
         _swapchain = Swapchain {context, &_vulkan_device};
+    }
+
+    auto VulkanRenderer::render() noexcept -> kstd::Result<void> {
+        VK_CHECK(vkResetCommandPool(_vulkan_device._virtual_device, _command_pool._command_pool,
+                                    VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT),
+                 "Unable to render: {}")
+        VK_CHECK(vkResetCommandBuffer(_command_buffer._command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT),
+                 "Unable to render: {}")
+
+        if(const auto next_image_result = _swapchain.next_image(); next_image_result.is_error()) {
+            return next_image_result;
+        }
+
+        // Begin command buffer
+        if(const auto begin_result = _command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+           begin_result.is_error()) {
+            return begin_result;
+        }
+
+        VkImageMemoryBarrier image_memory_barrier {};
+        image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_memory_barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        image_memory_barrier.image = _swapchain.current_image();
+        image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_memory_barrier.subresourceRange.baseMipLevel = 0;
+        image_memory_barrier.subresourceRange.levelCount = 1;
+        image_memory_barrier.subresourceRange.baseArrayLayer = 0;
+        image_memory_barrier.subresourceRange.layerCount = 1;
+        vkCmdPipelineBarrier(_command_buffer._command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                             &image_memory_barrier);
+
+        // Get window bounds
+        int32_t width = 0;
+        int32_t height = 1;
+        SDL_GetWindowSize(_vulkan_context.get_window()->get_window_handle(), &width, &height);
+        VkExtent2D window_size {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+        // Get rendering info
+        VkClearColorValue clear_color_value {};
+        clear_color_value.float32[0] = 1.0f;
+        clear_color_value.float32[1] = 1.0f;
+        clear_color_value.float32[2] = 1.0f;
+        clear_color_value.float32[3] = 1.0f;
+        VkClearValue clear_value {};
+        clear_value.color = clear_color_value;
+
+        VkRenderingAttachmentInfo attachment_info {};
+        attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        attachment_info.imageView = _swapchain.current_image_view();
+        attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachment_info.clearValue = clear_value;
+
+        VkRenderingInfo rendering_info {};
+        rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        rendering_info.renderArea.extent = window_size;
+        rendering_info.colorAttachmentCount = 0;
+        rendering_info.pColorAttachments = &attachment_info;
+        rendering_info.layerCount = 1;
+
+        vkCmdBeginRendering(_command_buffer._command_buffer, &rendering_info);
+
+        // TODO: Render
+
+        vkCmdEndRendering(_command_buffer._command_buffer);
+
+        image_memory_barrier = {};
+        image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_memory_barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        image_memory_barrier.image = _swapchain.current_image();
+        image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_memory_barrier.subresourceRange.baseMipLevel = 0;
+        image_memory_barrier.subresourceRange.levelCount = 1;
+        image_memory_barrier.subresourceRange.baseArrayLayer = 0;
+        image_memory_barrier.subresourceRange.layerCount = 1;
+        vkCmdPipelineBarrier(_command_buffer._command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+
+        // End command buffer
+        if(const auto end_result = _command_buffer.end(); end_result.is_error()) {
+            return end_result;
+        }
+
+        VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        //TODO: Remove fence
+        VkFenceCreateInfo fence_create_info {};
+        fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFence fence {};
+
+        VK_CHECK(vkCreateFence(_vulkan_device._virtual_device, &fence_create_info, nullptr, &fence),
+                 "Unable to render: {}");
+
+        VkSubmitInfo submit_info {};
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.waitSemaphoreCount = 1;
+        submit_info.pWaitSemaphores = &_vulkan_device._submit_semaphore;
+        submit_info.pWaitDstStageMask = &wait_dst_stage_mask;
+        submit_info.commandBufferCount = 1;
+        submit_info.pCommandBuffers = &_command_buffer._command_buffer;
+        submit_info.signalSemaphoreCount = 1;
+        submit_info.pSignalSemaphores = &_vulkan_device._present_semaphore;
+        VK_CHECK(vkQueueSubmit(_vulkan_device._graphics_queue, 1, &submit_info, fence), "Unable to submit: {}")
+
+        auto current_image_index = _swapchain.current_image_index();
+        VkPresentInfoKHR present_info {};
+        present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present_info.waitSemaphoreCount = 1;
+        present_info.pWaitSemaphores = &_vulkan_device._present_semaphore;
+        present_info.swapchainCount = 1;
+        present_info.pSwapchains = &_swapchain._swapchain;
+        present_info.pImageIndices = &current_image_index;
+        VK_CHECK(vkQueuePresentKHR(_vulkan_device._graphics_queue, &present_info), "Unable to present queue: {}")
+
+        VK_CHECK(vkWaitForFences(_vulkan_device._virtual_device, 1, &fence, true, std::numeric_limits<uint64_t>::max()),
+                 "Unable to wait for fence: {}")
+        vkDestroyFence(_vulkan_device._virtual_device, fence, nullptr);
+
+        return {};
     }
 
     auto VulkanRenderer::get_device() const noexcept -> const VulkanDevice& {
@@ -45,4 +172,4 @@ namespace aetherium::renderer {
         }
         return kstd::Option<kstd::Tuple<VkAccessFlags, VkAccessFlags>> {};
     }
-}
+}// namespace aetherium::renderer

@@ -94,6 +94,8 @@ namespace aetherium::renderer {
         [[nodiscard]] auto find_device(DeviceSearchStrategy strategy, bool only_dedicated = false) const noexcept
                 -> kstd::Result<VulkanDevice>;
 
+        [[nodiscard]] auto get_window() noexcept -> Window*;
+
         ~VulkanContext() noexcept;
         KSTD_NO_COPY(VulkanContext, VulkanContext);
     };
