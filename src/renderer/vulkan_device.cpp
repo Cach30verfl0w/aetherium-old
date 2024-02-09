@@ -25,9 +25,7 @@ namespace aetherium::renderer {
     VulkanDevice::VulkanDevice() noexcept :// NOLINT
             _physical_device {nullptr},
             _virtual_device {nullptr},
-            _properties {},
-            _submit_semaphore {nullptr},
-            _present_semaphore {nullptr} {
+            _properties {} {
     }
 
     /**
@@ -73,41 +71,19 @@ namespace aetherium::renderer {
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
         vkGetDeviceQueue(_virtual_device, 0, 0, &_graphics_queue);
-
-        // Create semaphores
-        VkSemaphoreCreateInfo semaphore_create_info {};
-        semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        VK_CHECK_EX(vkCreateSemaphore(_virtual_device, &semaphore_create_info, nullptr, &_submit_semaphore),
-                    "Unable to create device: {}")
-        VK_CHECK_EX(vkCreateSemaphore(_virtual_device, &semaphore_create_info, nullptr, &_present_semaphore),
-                    "Unable to create device: {}")
     }
 
     VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
             _physical_device {other._physical_device},
             _virtual_device {other._virtual_device},
             _properties {other._properties},
-            _submit_semaphore {other._submit_semaphore},
-            _present_semaphore {other._present_semaphore},
             _graphics_queue {other._graphics_queue} {
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
-        other._submit_semaphore = nullptr;
-        other._present_semaphore = nullptr;
         other._graphics_queue = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
-        if(_submit_semaphore != nullptr) {
-            vkDestroySemaphore(_virtual_device, _submit_semaphore, nullptr);
-            _submit_semaphore = nullptr;
-        }
-
-        if(_present_semaphore != nullptr) {
-            vkDestroySemaphore(_virtual_device, _present_semaphore, nullptr);
-            _present_semaphore = nullptr;
-        }
-
         if(_virtual_device != nullptr) {
             vkDestroyDevice(_virtual_device, nullptr);
             _virtual_device = nullptr;
@@ -164,13 +140,9 @@ namespace aetherium::renderer {
         _physical_device = other._physical_device;
         _virtual_device = other._virtual_device;
         _properties = other._properties;
-        _submit_semaphore = other._submit_semaphore;
-        _present_semaphore = other._present_semaphore;
         _graphics_queue = other._graphics_queue;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
-        other._submit_semaphore = nullptr;
-        other._present_semaphore = nullptr;
         other._graphics_queue = nullptr;
         return *this;
     }

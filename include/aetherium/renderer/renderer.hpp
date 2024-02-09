@@ -27,13 +27,19 @@ namespace aetherium::renderer {
         CommandPool _command_pool;
         CommandBuffer _command_buffer;
         Swapchain _swapchain;
+        VkSemaphore _image_available_semaphore {};
+        VkSemaphore _rendering_done_semaphore {};
 
         public:
         explicit VulkanRenderer(VulkanContext& context);
+        VulkanRenderer(VulkanRenderer&& other) noexcept;
+        ~VulkanRenderer() noexcept;
+        KSTD_NO_COPY(VulkanRenderer, VulkanRenderer);
 
         [[nodiscard]] auto render() noexcept -> kstd::Result<void>;
-
         [[nodiscard]] auto get_device() const noexcept -> const VulkanDevice&;
+
+        auto operator=(VulkanRenderer&& other) noexcept -> VulkanRenderer&;
     };
 
     [[nodiscard]] auto access_mask_flags(VkImageLayout old_layout, VkImageLayout new_layout) noexcept

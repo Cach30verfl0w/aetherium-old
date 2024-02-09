@@ -22,7 +22,7 @@ class DefaultScreen final : public Screen {
     renderer::VulkanRenderer* _vulkan_renderer;
 
     public:
-    DefaultScreen(renderer::VulkanRenderer* vulkan_renderer) noexcept :
+    explicit DefaultScreen(renderer::VulkanRenderer* vulkan_renderer) noexcept :
             Screen("Main Menu"),
             _vulkan_renderer {vulkan_renderer} {
     }

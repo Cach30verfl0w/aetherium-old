@@ -24,6 +24,40 @@ namespace aetherium::renderer {
         _command_pool = CommandPool {&_vulkan_device};
         _command_buffer = std::move(_command_pool.allocate_command_buffers(1).get_or_throw().at(0));
         _swapchain = Swapchain {context, &_vulkan_device};
+
+        // Create semaphores
+        VkSemaphoreCreateInfo semaphore_create_info {};
+        semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VK_CHECK_EX(vkCreateSemaphore(_vulkan_device._virtual_device, &semaphore_create_info, nullptr,
+                                      &_image_available_semaphore),
+                    "Unable to create device: {}")
+        VK_CHECK_EX(vkCreateSemaphore(_vulkan_device._virtual_device, &semaphore_create_info, nullptr,
+                                      &_rendering_done_semaphore),
+                    "Unable to create device: {}")
+    }
+
+    VulkanRenderer::VulkanRenderer(aetherium::renderer::VulkanRenderer&& other) noexcept :
+            _vulkan_context {other._vulkan_context},
+            _vulkan_device {std::move(other._vulkan_device)},
+            _command_pool {std::move(other._command_pool)},
+            _command_buffer {std::move(other._command_buffer)},
+            _swapchain {std::move(other._swapchain)},
+            _image_available_semaphore {other._image_available_semaphore},
+            _rendering_done_semaphore {other._rendering_done_semaphore} {
+        other._image_available_semaphore = nullptr;
+        other._rendering_done_semaphore = nullptr;
+    }
+
+    VulkanRenderer::~VulkanRenderer() noexcept {
+        if(_image_available_semaphore != nullptr) {
+            vkDestroySemaphore(_vulkan_device._virtual_device, _image_available_semaphore, nullptr);
+            _image_available_semaphore = nullptr;
+        }
+
+        if(_rendering_done_semaphore != nullptr) {
+            vkDestroySemaphore(_vulkan_device._virtual_device, _rendering_done_semaphore, nullptr);
+            _rendering_done_semaphore = nullptr;
+        }
     }
 
     auto VulkanRenderer::render() noexcept -> kstd::Result<void> {
@@ -33,7 +67,8 @@ namespace aetherium::renderer {
         VK_CHECK(vkResetCommandBuffer(_command_buffer._command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT),
                  "Unable to render: {}")
 
-        if(const auto next_image_result = _swapchain.next_image(); next_image_result.is_error()) {
+        if(const auto next_image_result = _swapchain.next_image(_image_available_semaphore);
+           next_image_result.is_error()) {
             return next_image_result;
         }
 
@@ -111,24 +146,24 @@ namespace aetherium::renderer {
         VkSubmitInfo submit_info {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.waitSemaphoreCount = 1;
-        submit_info.pWaitSemaphores = &_vulkan_device._submit_semaphore;
+        submit_info.pWaitSemaphores = &_image_available_semaphore;
         submit_info.pWaitDstStageMask = &wait_dst_stage_mask;
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &_command_buffer._command_buffer;
         submit_info.signalSemaphoreCount = 1;
-        submit_info.pSignalSemaphores = &_vulkan_device._present_semaphore;
+        submit_info.pSignalSemaphores = &_rendering_done_semaphore;
         VK_CHECK(vkQueueSubmit(_vulkan_device._graphics_queue, 1, &submit_info, *fence), "Unable to submit: {}")
 
         auto current_image_index = _swapchain.current_image_index();
         VkPresentInfoKHR present_info {};
         present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
         present_info.waitSemaphoreCount = 1;
-        present_info.pWaitSemaphores = &_vulkan_device._present_semaphore;
+        present_info.pWaitSemaphores = &_rendering_done_semaphore;
         present_info.swapchainCount = 1;
         present_info.pSwapchains = &_swapchain._swapchain;
         present_info.pImageIndices = &current_image_index;
         VK_CHECK(vkQueuePresentKHR(_vulkan_device._graphics_queue, &present_info), "Unable to present queue: {}")
-        if (const auto wait_result = fence.wait_for(); wait_result.is_error()) {
+        if(const auto wait_result = fence.wait_for(); wait_result.is_error()) {
             return wait_result;
         }
 
@@ -137,6 +172,17 @@ namespace aetherium::renderer {
 
     auto VulkanRenderer::get_device() const noexcept -> const VulkanDevice& {
         return _vulkan_device;
+    }
+
+    auto VulkanRenderer::operator=(aetherium::renderer::VulkanRenderer&& other) noexcept -> VulkanRenderer& {
+        _vulkan_context = std::move(other._vulkan_context);
+        _vulkan_device = std::move(other._vulkan_device);
+        _command_pool = std::move(other._command_pool);
+        _command_buffer = std::move(other._command_buffer);
+        _swapchain = std::move(other._swapchain);
+        _image_available_semaphore = other._image_available_semaphore;
+        _rendering_done_semaphore = other._rendering_done_semaphore;
+        return *this;
     }
 
     auto access_mask_flags(VkImageLayout old_layout, VkImageLayout new_layout) noexcept

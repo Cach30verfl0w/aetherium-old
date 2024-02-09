@@ -49,10 +49,12 @@ namespace aetherium::renderer {
 
         // Get images
         uint32_t image_count = 0;
-        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, nullptr), "Unable to get images: {}")
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, nullptr),
+                    "Unable to get images: {}")
         _images.resize(image_count);
         _image_views.resize(image_count);
-        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, _images.data()), "Unable to get images: {}")
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, _images.data()),
+                    "Unable to get images: {}")
 
         // Create image views from images
         for(auto i = 0; i < _images.size(); i++) {
@@ -73,7 +75,9 @@ namespace aetherium::renderer {
             image_view_create_info.subresourceRange.layerCount = 1;
 
             //TODO: error handling
-            VK_CHECK_EX(vkCreateImageView(_vulkan_device->_virtual_device, &image_view_create_info, nullptr, _image_views.data() + i), "Unable to create swapchain: {}")
+            VK_CHECK_EX(vkCreateImageView(_vulkan_device->_virtual_device, &image_view_create_info, nullptr,
+                                          _image_views.data() + i),
+                        "Unable to create swapchain: {}")
         }
     }
 
@@ -102,10 +106,10 @@ namespace aetherium::renderer {
         other._images = {};
     }
 
-    auto Swapchain::next_image() noexcept -> kstd::Result<void> {
+    auto Swapchain::next_image(VkSemaphore image_available_semaphore) noexcept -> kstd::Result<void> {
         VK_CHECK(vkAcquireNextImageKHR(_vulkan_device->_virtual_device, _swapchain,
-                                       std::numeric_limits<uint64_t>::max(), _vulkan_device->_submit_semaphore,
-                                       VK_NULL_HANDLE, &_current_image_index),
+                                       std::numeric_limits<uint64_t>::max(), image_available_semaphore, VK_NULL_HANDLE,
+                                       &_current_image_index),
                  "Unable to acquire next image: {}")
         return {};
     }

@@ -39,10 +39,7 @@ namespace aetherium::renderer {
         VkPhysicalDevice _physical_device;
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
-        // TODO: Redesign store for semaphores
-        VkSemaphore _submit_semaphore; // Image Available Semaphore
-        VkSemaphore _present_semaphore;// Rendering Done Semaphore
-        VkQueue _graphics_queue;       // TODO: Support multiple queues
+        VkQueue _graphics_queue; // TODO: Support multiple queues
 
         public:
         friend class VulkanRenderer;
