@@ -153,9 +153,9 @@ namespace aetherium::renderer {
                                               VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         debug_utils_create_info.pfnUserCallback = vulkan_debug_callback;
 
-        /*VK_CHECK_EX(
+        VK_CHECK_EX(
                 vkCreateDebugUtilsMessengerEXT(_instance, &debug_utils_create_info, nullptr, &_debug_utils_messenger),
-                "Unable to create Vulkan context: {}")*/
+                "Unable to create Vulkan context: {}")
 #endif
     }
 
