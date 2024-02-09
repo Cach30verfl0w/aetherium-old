@@ -46,11 +46,13 @@ namespace aetherium {
 
     auto Window::run_loop() const noexcept -> kstd::Result<void> {
         SDL_Event event {};
-        while (true) {
-            while (SDL_PollEvent(&event)) {
+        auto is_running = true;
+        while (is_running) {
+            while (is_running && SDL_PollEvent(&event)) {
                 // Close screen if event is quit event
                 if (event.type == SDL_QUIT) {
-                    return {};
+                    is_running = false;
+                    continue;
                 }
 
                 // Notify handler about event
@@ -68,6 +70,7 @@ namespace aetherium {
                 }
             }
         }
+        return {};
     }
 
     auto Window::get_window_handle() noexcept -> SDL_Window* {

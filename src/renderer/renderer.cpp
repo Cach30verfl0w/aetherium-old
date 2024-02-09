@@ -83,14 +83,11 @@ namespace aetherium::renderer {
         VkRenderingInfo rendering_info {};
         rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         rendering_info.renderArea.extent = window_size;
-        rendering_info.colorAttachmentCount = 0;
+        rendering_info.colorAttachmentCount = 1;
         rendering_info.pColorAttachments = &attachment_info;
         rendering_info.layerCount = 1;
 
         vkCmdBeginRendering(_command_buffer._command_buffer, &rendering_info);
-
-        // TODO: Render
-
         vkCmdEndRendering(_command_buffer._command_buffer);
 
         image_memory_barrier = {};
@@ -120,7 +117,7 @@ namespace aetherium::renderer {
         VkFence fence {};
 
         VK_CHECK(vkCreateFence(_vulkan_device._virtual_device, &fence_create_info, nullptr, &fence),
-                 "Unable to render: {}");
+                 "Unable to render: {}")
 
         VkSubmitInfo submit_info {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
