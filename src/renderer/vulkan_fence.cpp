@@ -15,8 +15,19 @@
 #include "aetherium/renderer/vulkan_fence.hpp"
 
 namespace aetherium::renderer {
+
+    /**
+     * This constructor creates the fence by the specified device. This fence is used to wait on the CPU-site for
+     * operations on the GPU.
+     *
+     * @param device The device on which the fence is to be created
+     *
+     * @author       Cedric Hammes
+     * @since        09/02/2024
+     */
     VulkanFence::VulkanFence(const aetherium::renderer::VulkanDevice* device) :
-            _device {device} {
+            _device {device},
+            _fence_handle {nullptr} {
         VkFenceCreateInfo fence_create_info = {};
         fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         VK_CHECK_EX(vkCreateFence(_device->_virtual_device, &fence_create_info, nullptr, &_fence_handle),
@@ -37,6 +48,16 @@ namespace aetherium::renderer {
         }
     }
 
+    /**
+     * This function waits for a signal, which indicates that the task is ended, by the fence. We are waiting based
+     * on the specified timeout.
+     *
+     * @param timeout The maximal wait timeout
+     * @return        Success or error
+     *
+     * @author        Cedric Hammes
+     * @since         09/02/2024
+     */
     auto VulkanFence::wait_for(uint64_t timeout) const noexcept -> kstd::Result<void> {
         VK_CHECK(vkWaitForFences(_device->_virtual_device, 1, &_fence_handle, true, timeout),
                  "Unable to wait for fence: {}")

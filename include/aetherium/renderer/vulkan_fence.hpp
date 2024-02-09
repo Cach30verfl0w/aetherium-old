@@ -16,18 +16,45 @@
 #include "aetherium/renderer/vulkan_device.hpp"
 
 namespace aetherium::renderer {
+    /**
+     * This class is a safe-wrapper around the vulkan fence. This allows the developer to wait on the CPU-site for
+     * GPU-site operations.
+     *
+     * @author Cedric Hammes
+     * @since  09/02/2024
+     */
     class VulkanFence {
         const VulkanDevice* _device;
         VkFence _fence_handle;
 
         public:
-        VulkanFence(const VulkanDevice* device);
+        /**
+         * This constructor creates the fence by the specified device. This fence is used to wait on the CPU-site for
+         * operations on the GPU.
+         *
+         * @param device The device on which the fence is to be created
+         *
+         * @author       Cedric Hammes
+         * @since        09/02/2024
+         */
+        explicit VulkanFence(const VulkanDevice* device);
         ~VulkanFence() noexcept;
         VulkanFence(VulkanFence&& other) noexcept;
         KSTD_NO_COPY(VulkanFence, VulkanFence);
 
+        /**
+         * This function waits for a signal, which indicates that the task is ended, by the fence. We are waiting based
+         * on the specified timeout.
+         *
+         * @param timeout The maximal wait timeout
+         * @return        Success or error
+         *
+         * @author        Cedric Hammes
+         * @since         09/02/2024
+         */
         [[nodiscard]] auto wait_for(uint64_t timeout = std::numeric_limits<uint64_t>::max()) const noexcept
                 -> kstd::Result<void>;
+
         auto operator=(VulkanFence&& other) noexcept -> VulkanFence&;
         auto operator*() const noexcept -> VkFence;
     };

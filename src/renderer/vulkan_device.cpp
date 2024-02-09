@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan_fence.hpp"
 
 namespace aetherium::renderer {
     /**
@@ -129,37 +130,33 @@ namespace aetherium::renderer {
         static_assert(std::is_convertible_v<F, std::function<void(CommandBuffer&)>>, "Invalid command buffer consumer");
 
         // Create command buffer and submit fence
-        auto command_pool = kstd::try_construct<CommandPool>(this);
-        command_pool.throw_if_error();
-        auto command_buffer = std::move(command_pool->allocate_command_buffers(1).get_or_throw()[0]);
+        const auto command_pool = kstd::try_construct<CommandPool>(this);
+        if(command_pool.is_error()) {
+            return kstd::Error {command_pool.get_error()};
+        }
 
-        VkFence submit_fence {};
-        VkFenceCreateInfo submit_fence_create_info {};
-        submit_fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VK_CHECK(vkCreateFence(_virtual_device, &submit_fence_create_info, nullptr, &submit_fence),
-                 "Unable to submit one-time command buffer: {}")
+        const auto command_buffer = std::move(command_pool->allocate_command_buffers(1).get_or_throw()[0]);
+        const auto submit_fence = VulkanFence {this};
 
         // Perform operation
-        VkCommandBufferBeginInfo command_buffer_begin_info {};
-        command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        VK_CHECK(vkBeginCommandBuffer(command_buffer._command_buffer, &command_buffer_begin_info),
-                 "Unable to submit one-time command buffer: {}")
+        if(const auto begin_result = command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+           begin_result.is_error()) {
+            return begin_result;
+        }
         function(&command_buffer);
-        VK_CHECK(vkEndCommandBuffer(command_buffer._command_buffer), "Unable to submit one-time command buffer: {}")
+        if(const auto end_result = command_buffer.end(); end_result.is_error()) {
+            return end_result;
+        }
 
-        // Submit and free
+        // Submit
         VkSubmitInfo submit_info {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.pCommandBuffers = &command_buffer._command_buffer;
         submit_info.commandBufferCount = 1;
-
-        VkQueue queue {};
-        vkGetDeviceQueue(_virtual_device, 0, 0, &queue);
-        vkQueueSubmit(queue, 1, &submit_info, submit_fence);
-        VK_CHECK(vkWaitForFences(_virtual_device, 1, &submit_fence, true, std::numeric_limits<uint32_t>::max()),
-                 "Unable to submit one-time command buffer: {}")
-        vkDestroyFence(_virtual_device, submit_fence, nullptr);
+        vkQueueSubmit(_graphics_queue, 1, &submit_info, *submit_fence);
+        if(const auto wait_result = submit_fence.wait_for(); wait_result.is_error()) {
+            return wait_result;
+        }
         return {};
     }
 
@@ -218,7 +215,7 @@ namespace aetherium::renderer {
         }
     }
 
-    auto CommandBuffer::begin(VkCommandBufferUsageFlags usage) -> kstd::Result<void> {
+    auto CommandBuffer::begin(VkCommandBufferUsageFlags usage) const noexcept -> kstd::Result<void> {
         VkCommandBufferBeginInfo command_buffer_begin_info {};
         command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         command_buffer_begin_info.flags = usage;
@@ -228,7 +225,7 @@ namespace aetherium::renderer {
         return {};
     }
 
-    auto CommandBuffer::end() -> kstd::Result<void> {
+    auto CommandBuffer::end() const noexcept -> kstd::Result<void> {
         VK_CHECK(vkEndCommandBuffer(_command_buffer), "Unable to end command buffer: {}")
         return {};
     }
