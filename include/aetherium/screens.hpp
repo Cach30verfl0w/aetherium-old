@@ -63,6 +63,6 @@ namespace aetherium {
          * @author Cedric Hammes
          * @since  07/02/2024
          */
-         [[nodiscard]] inline auto get_name() const noexcept -> const std::string&;
+         [[nodiscard]] auto get_name() const noexcept -> const std::string&;
     };
 }

@@ -15,7 +15,8 @@
 #include "aetherium/window.hpp"
 
 namespace aetherium {
-    Window::Window(std::string_view window_title, int32_t width, int32_t height) {
+    Window::Window(std::string_view window_title, int32_t width, int32_t height) :
+            _window_name {window_title} {
         using namespace std::string_literals;
 
         if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -32,6 +33,7 @@ namespace aetherium {
     }
 
     Window::Window(aetherium::Window&& other) noexcept :// NOLINT
+            _window_name {other._window_name},
             _window_handle {other._window_handle} {
         other._window_handle = nullptr;
     }
@@ -47,24 +49,24 @@ namespace aetherium {
     auto Window::run_loop() const noexcept -> kstd::Result<void> {
         SDL_Event event {};
         auto is_running = true;
-        while (is_running) {
-            while (is_running && SDL_PollEvent(&event)) {
+        while(is_running) {
+            while(is_running && SDL_PollEvent(&event)) {
                 // Close screen if event is quit event
-                if (event.type == SDL_QUIT) {
+                if(event.type == SDL_QUIT) {
                     is_running = false;
                     continue;
                 }
 
                 // Notify handler about event
                 for(const auto& event_handler : this->_event_handlers) {
-                    if (const auto result = event_handler->handle_event(this, &event); result.is_error()) {
+                    if(const auto result = event_handler->handle_event(this, &event); result.is_error()) {
                         return result;
                     }
                 }
 
                 // Redraw screen
-                if (_current_screen.has_value()) {
-                    if (const auto result = (*_current_screen)->render(); result.is_error()) {
+                if(_current_screen.has_value()) {
+                    if(const auto result = (*_current_screen)->render(); result.is_error()) {
                         return result;
                     }
                 }
@@ -78,13 +80,14 @@ namespace aetherium {
     }
 
     auto Window::get_current_screen() const noexcept -> kstd::Option<std::shared_ptr<Screen>> {
-        if (_current_screen.is_empty()) {
+        if(_current_screen.is_empty()) {
             return kstd::Option<std::shared_ptr<Screen>> {};
         }
         return {*_current_screen};
     }
 
     auto Window::operator=(aetherium::Window&& other) noexcept -> Window& {
+        _window_name = other._window_name;
         _window_handle = other._window_handle;
         other._window_handle = nullptr;
         return *this;
@@ -92,14 +95,14 @@ namespace aetherium {
 
     auto ScreenEventHandler::handle_event(const aetherium::Window* window, SDL_Event* event) -> kstd::Result<void> {
         auto screen = window->get_current_screen();
-        if (screen.has_value()) {
-            if (const auto render_result = screen.get()->render(); render_result.is_error()) {
+        if(screen.has_value()) {
+            if(const auto render_result = screen.get()->render(); render_result.is_error()) {
                 return render_result;
             }
         }
 
-        switch (event->type) {
+        switch(event->type) {
             default: return {};
         }
     }
-}// namespace aetherium::core
+}// namespace aetherium

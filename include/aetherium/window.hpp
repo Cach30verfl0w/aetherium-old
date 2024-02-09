@@ -17,9 +17,9 @@
 #include <SDL2/SDL.h>
 #include <fmt/format.h>
 #include <kstd/defaults.hpp>
+#include <kstd/option.hpp>
 #include <kstd/result.hpp>
 #include <kstd/tuple.hpp>
-#include <kstd/option.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -37,10 +37,11 @@ namespace aetherium {
         ScreenEventHandler() noexcept = default;
         ~ScreenEventHandler() noexcept override = default;
         KSTD_DEFAULT_MOVE_COPY(ScreenEventHandler, ScreenEventHandler);
-        auto handle_event(const aetherium::Window *window, SDL_Event *event) -> kstd::Result<void> override;
+        auto handle_event(const aetherium::Window* window, SDL_Event* event) -> kstd::Result<void> override;
     };
 
     class Window final {
+        std::string_view _window_name;
         SDL_Window* _window_handle;
         std::vector<std::unique_ptr<EventHandler>> _event_handlers {};
         kstd::Option<std::shared_ptr<Screen>> _current_screen {};
@@ -54,7 +55,10 @@ namespace aetherium {
         template<typename SCREEN, typename... ARGS>
         [[nodiscard]] auto set_screen(ARGS&&... args) {
             static_assert(std::is_base_of_v<Screen, SCREEN>, "Specified screen isn't a real screen!");
-            _current_screen = {std::make_shared<SCREEN>(std::forward<ARGS>(args)...)};
+            const auto screen = std::make_shared<SCREEN>(std::forward<ARGS>(args)...);
+            const std::string window_title = {fmt::format("{} - {}", _window_name, (*screen).get_name())};
+            SDL_SetWindowTitle(_window_handle, window_title.data());
+            _current_screen = {screen};
         }
 
         template<typename HANDLER, typename... ARGS>
@@ -68,4 +72,4 @@ namespace aetherium {
         [[nodiscard]] auto get_current_screen() const noexcept -> kstd::Option<std::shared_ptr<Screen>>;
         auto operator=(Window&& other) noexcept -> Window&;
     };
-}// namespace aetherium::core
+}// namespace aetherium
