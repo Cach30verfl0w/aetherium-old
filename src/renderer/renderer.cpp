@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "aetherium/renderer/renderer.hpp"
+#include "aetherium/renderer/vulkan_fence.hpp"
 #include <array>
 
 namespace aetherium::renderer {
@@ -64,21 +65,16 @@ namespace aetherium::renderer {
         VkExtent2D window_size {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
         // Get rendering info
-        VkClearColorValue clear_color_value {};
-        clear_color_value.float32[0] = 1.0f;
-        clear_color_value.float32[1] = 1.0f;
-        clear_color_value.float32[2] = 1.0f;
-        clear_color_value.float32[3] = 1.0f;
-        VkClearValue clear_value {};
-        clear_value.color = clear_color_value;
-
         VkRenderingAttachmentInfo attachment_info {};
         attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         attachment_info.imageView = _swapchain.current_image_view();
         attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachment_info.clearValue = clear_value;
+        attachment_info.clearValue.color.float32[0] = 0.0f;
+        attachment_info.clearValue.color.float32[1] = 0.0f;
+        attachment_info.clearValue.color.float32[2] = 0.0f;
+        attachment_info.clearValue.color.float32[3] = 1.0f;
 
         VkRenderingInfo rendering_info {};
         rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -110,14 +106,7 @@ namespace aetherium::renderer {
         }
 
         VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-        //TODO: Remove fence
-        VkFenceCreateInfo fence_create_info {};
-        fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VkFence fence {};
-
-        VK_CHECK(vkCreateFence(_vulkan_device._virtual_device, &fence_create_info, nullptr, &fence),
-                 "Unable to render: {}")
+        const auto fence = VulkanFence {&_vulkan_device};
 
         VkSubmitInfo submit_info {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -128,7 +117,7 @@ namespace aetherium::renderer {
         submit_info.pCommandBuffers = &_command_buffer._command_buffer;
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = &_vulkan_device._present_semaphore;
-        VK_CHECK(vkQueueSubmit(_vulkan_device._graphics_queue, 1, &submit_info, fence), "Unable to submit: {}")
+        VK_CHECK(vkQueueSubmit(_vulkan_device._graphics_queue, 1, &submit_info, *fence), "Unable to submit: {}")
 
         auto current_image_index = _swapchain.current_image_index();
         VkPresentInfoKHR present_info {};
@@ -139,10 +128,9 @@ namespace aetherium::renderer {
         present_info.pSwapchains = &_swapchain._swapchain;
         present_info.pImageIndices = &current_image_index;
         VK_CHECK(vkQueuePresentKHR(_vulkan_device._graphics_queue, &present_info), "Unable to present queue: {}")
-
-        VK_CHECK(vkWaitForFences(_vulkan_device._virtual_device, 1, &fence, true, std::numeric_limits<uint64_t>::max()),
-                 "Unable to wait for fence: {}")
-        vkDestroyFence(_vulkan_device._virtual_device, fence, nullptr);
+        if (const auto wait_result = fence.wait_for(); wait_result.is_error()) {
+            return wait_result;
+        }
 
         return {};
     }

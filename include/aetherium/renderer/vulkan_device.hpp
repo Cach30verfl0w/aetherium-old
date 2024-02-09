@@ -49,6 +49,7 @@ namespace aetherium::renderer {
         friend class CommandPool;
         friend class CommandBuffer;
         friend class Swapchain;
+        friend class VulkanFence;
 
         /**
          * This constructor creates an empty vulkan device
