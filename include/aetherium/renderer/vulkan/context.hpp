@@ -14,13 +14,13 @@
 
 #pragma once
 
-#include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan/device.hpp"
 #include "aetherium/window.hpp"
 #include <kstd/defaults.hpp>
 #include <kstd/option.hpp>
 #include <kstd/result.hpp>
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     /**
      * This enum identifies the strategy of the device search. This makes possible to search the device with the highest
      * performance or the lowest performance. The performance of the devices is identified by the device-local heap

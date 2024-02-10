@@ -28,7 +28,7 @@ class DefaultScreen final : public Screen {
     }
 
     auto render() noexcept -> kstd::Result<void> override {
-        if (auto result = _vulkan_renderer->render(); result.is_error()) {
+        if(auto result = _vulkan_renderer->render(); result.is_error()) {
             return result;
         }
         return {};
@@ -39,7 +39,7 @@ class DefaultScreen final : public Screen {
 auto main() -> int {
     spdlog::set_level(spdlog::level::debug);
     auto window = Window {"Test window"};
-    auto vulkan_context = renderer::VulkanContext {window, "Test App", 1, 0, 0};
+    auto vulkan_context = renderer::vulkan::VulkanContext {window, "Test App", 1, 0, 0};
     auto renderer = renderer::VulkanRenderer {vulkan_context};
     printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
 

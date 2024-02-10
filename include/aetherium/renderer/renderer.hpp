@@ -14,30 +14,30 @@
 
 #pragma once
 
-#include "aetherium/renderer/vulkan_context.hpp"
-#include "aetherium/renderer/vulkan_device.hpp"
-#include "aetherium/renderer/vulkan_swapchain.hpp"
+#include "aetherium/renderer/vulkan/context.hpp"
+#include "aetherium/renderer/vulkan/device.hpp"
+#include "aetherium/renderer/vulkan/swapchain.hpp"
 #include <kstd/tuple.hpp>
 #include <kstd/result.hpp>
 
 namespace aetherium::renderer {
     class VulkanRenderer {
-        VulkanContext& _vulkan_context;
-        VulkanDevice _vulkan_device;
-        CommandPool _command_pool;
-        CommandBuffer _command_buffer;
-        Swapchain _swapchain;
+        vulkan::VulkanContext& _vulkan_context;
+        vulkan::VulkanDevice _vulkan_device;
+        vulkan::CommandPool _command_pool;
+        vulkan::CommandBuffer _command_buffer;
+        vulkan::Swapchain _swapchain;
         VkSemaphore _image_available_semaphore {};
         VkSemaphore _rendering_done_semaphore {};
 
         public:
-        explicit VulkanRenderer(VulkanContext& context);
+        explicit VulkanRenderer(vulkan::VulkanContext& context);
         VulkanRenderer(VulkanRenderer&& other) noexcept;
         ~VulkanRenderer() noexcept;
         KSTD_NO_COPY(VulkanRenderer, VulkanRenderer);
 
         [[nodiscard]] auto render() noexcept -> kstd::Result<void>;
-        [[nodiscard]] auto get_device() const noexcept -> const VulkanDevice&;
+        [[nodiscard]] auto get_device() const noexcept -> const vulkan::VulkanDevice&;
 
         auto operator=(VulkanRenderer&& other) noexcept -> VulkanRenderer&;
     };

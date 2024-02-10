@@ -1,23 +1,23 @@
-// Copyright 2024 Cedric Hammes/Cach30verfl0w
+//  Copyright 2024 Cedric Hammes/Cach30verfl0w
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 //
-// http://www.apache.org/licenses/LICENSE-2.0
+//  http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 
-#include "aetherium/renderer/vulkan_context.hpp"
-#include <SDL_vulkan.h>
-#include <kstd/safe_alloc.hpp>
-#include <spdlog/spdlog.h>
+#include "aetherium/renderer/vulkan/context.hpp"
+#include "SDL2/SDL_vulkan.h"
+#include "kstd/safe_alloc.hpp"
+#include "spdlog/spdlog.h"
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     namespace {
         auto enumerate_available_layers() -> kstd::Result<std::vector<std::string>> {
             uint32_t count = 0;
@@ -159,7 +159,7 @@ namespace aetherium::renderer {
 #endif
     }
 
-    VulkanContext::VulkanContext(aetherium::renderer::VulkanContext&& other) noexcept :// NOLINT
+    VulkanContext::VulkanContext(VulkanContext&& other) noexcept :// NOLINT
             _instance {other._instance},
             _window {other._window} {
         other._instance = nullptr;
@@ -204,7 +204,7 @@ namespace aetherium::renderer {
      * @author               Cedric Hammes
      * @since                04/02/2024
      */
-    auto VulkanContext::find_device(aetherium::renderer::DeviceSearchStrategy strategy,
+    auto VulkanContext::find_device(DeviceSearchStrategy strategy,
                                     bool only_dedicated) const noexcept -> kstd::Result<VulkanDevice> {
         using namespace std::string_literals;
 
@@ -223,7 +223,7 @@ namespace aetherium::renderer {
         return kstd::try_construct<VulkanDevice>(physical_device);
     }
 
-    auto VulkanContext::operator=(aetherium::renderer::VulkanContext&& other) noexcept -> VulkanContext& {
+    auto VulkanContext::operator=(VulkanContext&& other) noexcept -> VulkanContext& {
         _instance = other._instance;
         other._instance = nullptr;
         _window = other._window;
