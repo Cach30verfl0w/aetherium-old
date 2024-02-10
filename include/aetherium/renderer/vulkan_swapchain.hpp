@@ -23,6 +23,7 @@ namespace aetherium::renderer {
         std::vector<VkImageView> _image_views {};
         std::vector<VkImage> _images {};
         uint32_t _current_image_index;
+        uint32_t _image_count = 2;
 
         public:
         friend class VulkanRenderer;
@@ -37,6 +38,7 @@ namespace aetherium::renderer {
         [[nodiscard]] auto current_image() const noexcept -> VkImage;
         [[nodiscard]] auto current_image_view() const noexcept -> VkImageView;
         [[nodiscard]] auto current_image_index() const noexcept -> uint32_t;
+        [[nodiscard]] auto get_image_count() const noexcept -> uint32_t;
 
         auto operator=(Swapchain&& other) noexcept -> Swapchain&;
     };

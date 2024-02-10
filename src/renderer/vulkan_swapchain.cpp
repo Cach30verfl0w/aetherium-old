@@ -126,6 +126,10 @@ namespace aetherium::renderer {
         return _current_image_index;
     }
 
+    auto Swapchain::get_image_count() const noexcept -> uint32_t {
+        return _image_count;
+    }
+
     auto Swapchain::operator=(aetherium::renderer::Swapchain&& other) noexcept -> Swapchain& {
         _vulkan_device = other._vulkan_device;
         _swapchain = other._swapchain;

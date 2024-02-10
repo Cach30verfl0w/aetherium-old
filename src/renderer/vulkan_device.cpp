@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan_descriptors.hpp"
 #include "aetherium/renderer/vulkan_fence.hpp"
 
 namespace aetherium::renderer {
@@ -25,7 +26,9 @@ namespace aetherium::renderer {
     VulkanDevice::VulkanDevice() noexcept :// NOLINT
             _physical_device {nullptr},
             _virtual_device {nullptr},
-            _properties {} {
+            _properties {},
+            _graphics_queue {nullptr},
+            _descriptor_pool {nullptr} {
     }
 
     /**
@@ -71,21 +74,33 @@ namespace aetherium::renderer {
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
         vkGetDeviceQueue(_virtual_device, 0, 0, &_graphics_queue);
+
+        // Create descriptor pool
+        DescriptorSetBuilder builder {};
+        builder.add_pool_size(VK_DESCRIPTOR_TYPE_SAMPLER, 32);
+        builder.add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 32);
+        builder.add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 32);
+        builder.add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 32);
+        _descriptor_pool = builder.build(*this).get_or_throw();
     }
 
     VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
             _physical_device {other._physical_device},
             _virtual_device {other._virtual_device},
             _properties {other._properties},
-            _graphics_queue {other._graphics_queue} {
+            _graphics_queue {other._graphics_queue},
+            _descriptor_pool {other._descriptor_pool} {
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._graphics_queue = nullptr;
+        other._descriptor_pool = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
         if(_virtual_device != nullptr) {
+            vkDestroyDescriptorPool(_virtual_device, _descriptor_pool, nullptr);
             vkDestroyDevice(_virtual_device, nullptr);
+            _descriptor_pool = nullptr;
             _virtual_device = nullptr;
         }
     }
@@ -136,14 +151,32 @@ namespace aetherium::renderer {
         return {};
     }
 
+    auto VulkanDevice::get_physical_device() const noexcept -> VkPhysicalDevice {
+        return _physical_device;
+    }
+
+    auto VulkanDevice::get_virtual_device() const noexcept -> VkDevice {
+        return _virtual_device;
+    }
+
+    auto VulkanDevice::get_graphics_queue() const noexcept -> VkQueue {
+        return _graphics_queue;
+    }
+
+    auto VulkanDevice::get_descriptor_pool() const noexcept -> VkDescriptorPool {
+        return _descriptor_pool;
+    }
+
     auto VulkanDevice::operator=(aetherium::renderer::VulkanDevice&& other) noexcept -> VulkanDevice& {
         _physical_device = other._physical_device;
         _virtual_device = other._virtual_device;
         _properties = other._properties;
         _graphics_queue = other._graphics_queue;
+        _descriptor_pool = other._descriptor_pool;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._graphics_queue = nullptr;
+        other._descriptor_pool = nullptr;
         return *this;
     }
 
@@ -208,6 +241,10 @@ namespace aetherium::renderer {
         other._command_pool = nullptr;
         other._command_buffer = nullptr;
         return *this;
+    }
+
+    auto CommandBuffer::operator*() const noexcept -> VkCommandBuffer {
+        return _command_buffer;
     }
 
     /**

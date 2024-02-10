@@ -40,6 +40,7 @@ namespace aetherium::renderer {
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
         VkQueue _graphics_queue; // TODO: Support multiple queues
+        VkDescriptorPool _descriptor_pool;
 
         public:
         friend class VulkanRenderer;
@@ -82,6 +83,11 @@ namespace aetherium::renderer {
          */
         template<typename F>
         [[maybe_unused]] [[nodiscard]] auto emit_command_buffer(F&& function) const noexcept -> kstd::Result<void>;
+
+        [[nodiscard]] auto get_physical_device() const noexcept -> VkPhysicalDevice;
+        [[nodiscard]] auto get_virtual_device() const noexcept -> VkDevice;
+        [[nodiscard]] auto get_graphics_queue() const noexcept -> VkQueue;
+        [[nodiscard]] auto get_descriptor_pool() const noexcept -> VkDescriptorPool;
 
         /**
          * This function returns the name of the device by the device properties.
@@ -147,6 +153,7 @@ namespace aetherium::renderer {
         [[nodiscard]] auto end() const noexcept -> kstd::Result<void>;
 
         auto operator=(CommandBuffer&& other) noexcept -> CommandBuffer&;
+        auto operator*() const noexcept -> VkCommandBuffer;
     };
 
     /**

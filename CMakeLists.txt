@@ -62,6 +62,33 @@ target_link_libraries(${PROJECT_NAME} PUBLIC glslang)
 target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/glslang-src/include")
 target_link_libraries(${PROJECT_NAME}-static PUBLIC glslang)
 
+# Pull in ImGui
+FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG docking)
+FetchContent_Populate(imgui)
+
+# Collect relevant ImGui source files, this is a mess..
+file(GLOB IMGUI_SOURCE_FILES "${CMAKE_BINARY_DIR}/_deps/imgui-src/*.cpp")
+file(GLOB IMGUI_MISC_SOURCE_FILES "${CMAKE_BINARY_DIR}/_deps/imgui-src/misc/cpp/*.cpp")
+list(APPEND IMGUI_SOURCE_FILES ${IMGUI_MISC_SOURCE_FILES})
+set(IMGUI_BACKENDS_DIR "${CMAKE_BINARY_DIR}/_deps/imgui-src/backends")
+list(APPEND IMGUI_SOURCE_FILES "${IMGUI_BACKENDS_DIR}/imgui_impl_sdl2.cpp")
+list(APPEND IMGUI_SOURCE_FILES "${IMGUI_BACKENDS_DIR}/imgui_impl_vulkan.cpp")
+
+add_library(imgui STATIC ${IMGUI_SOURCE_FILES})
+target_include_directories(imgui PUBLIC "${CMAKE_BINARY_DIR}/_deps/imgui-src")
+cmx_include_sdl2(imgui PUBLIC)
+
+target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/imgui-src")
+target_link_libraries(${PROJECT_NAME} PUBLIC imgui)
+add_dependencies(${PROJECT_NAME} imgui)
+target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/imgui-src")
+target_link_libraries(${PROJECT_NAME}-static PUBLIC imgui)
+add_dependencies(${PROJECT_NAME}-static imgui)
+add_compile_definitions(VK_NO_PROTOTYPES, IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING)
+
 # Include volk
 FetchContent_Declare(
         volk
@@ -75,6 +102,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_BINARY_DIR}/_deps/vol
 target_link_libraries(${PROJECT_NAME} PUBLIC volk)
 target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_BINARY_DIR}/_deps/volk-src/include")
 target_link_libraries(${PROJECT_NAME}-static PUBLIC volk)
+
+if(PLATFORM_LINUX AND COMPILER_GCC)
+    # Enable -fpermissive in order for ImGui to be able to build
+    set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+endif()
+
 
 # Include unit tests
 cmx_add_tests(${PROJECT_NAME}-tests "${CMAKE_CURRENT_SOURCE_DIR}/tests")

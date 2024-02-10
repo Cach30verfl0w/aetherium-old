@@ -94,8 +94,11 @@ namespace aetherium::renderer {
          */
         [[nodiscard]] auto find_device(DeviceSearchStrategy strategy, bool only_dedicated = false) const noexcept
                 -> kstd::Result<VulkanDevice>;
-        [[nodiscard]] auto get_window() noexcept -> Window*;
+        [[nodiscard]] auto get_surface_properties(const VulkanDevice& device) const noexcept
+                -> kstd::Result<VkSurfaceCapabilities2KHR>;
+        [[nodiscard]] auto get_window() const noexcept -> Window*;
 
         auto operator=(VulkanContext&& other) noexcept -> VulkanContext&;
+        auto operator*() const noexcept -> VkInstance;
     };
 }// namespace aetherium::renderer

@@ -113,6 +113,7 @@ namespace aetherium::renderer {
 #ifdef BUILD_DEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+        extensions.push_back("VK_KHR_get_surface_capabilities2");
         SPDLOG_DEBUG("Initializing Vulkan Context with {} extension(s) and {} layer(s)", extensions.size(),
                      enabled_layers.size());
 
@@ -235,7 +236,25 @@ namespace aetherium::renderer {
         return *this;
     }
 
-    auto VulkanContext::get_window() noexcept -> Window* {
+    auto VulkanContext::get_surface_properties(const VulkanDevice& device) const noexcept
+            -> kstd::Result<VkSurfaceCapabilities2KHR> {
+        VkPhysicalDeviceSurfaceInfo2KHR surface_info {};
+        surface_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR;
+        surface_info.surface = _surface;
+
+        VkSurfaceCapabilities2KHR surface_capabilities {};
+        surface_capabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+        VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilities2KHR(device.get_physical_device(), &surface_info,
+                                                            &surface_capabilities),
+                 "Unable to get surface properties: {}")
+        return surface_capabilities;
+    }
+
+    auto VulkanContext::get_window() const noexcept -> Window* {
         return _window;
+    }
+
+    auto VulkanContext::operator*() const noexcept -> VkInstance {
+        return _instance;
     }
 }// namespace aetherium::renderer
