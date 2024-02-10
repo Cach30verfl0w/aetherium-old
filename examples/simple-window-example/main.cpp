@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "aetherium/imgui.hpp"
 #include <aetherium/renderer/renderer.hpp>
 #include <aetherium/window.hpp>
 #include <spdlog/spdlog.h>
@@ -21,26 +20,16 @@ using namespace aetherium;
 
 class DefaultScreen final : public Screen {
     renderer::VulkanRenderer* _vulkan_renderer;
-    imgui::ImGuiRenderContext* _imgui_context;
 
     public:
-    explicit DefaultScreen(renderer::VulkanRenderer* vulkan_renderer, imgui::ImGuiRenderContext* imgui_context) noexcept
+    explicit DefaultScreen(renderer::VulkanRenderer* vulkan_renderer) noexcept
             :
             Screen("Main Menu"),
-            _vulkan_renderer {vulkan_renderer},
-            _imgui_context {imgui_context} {
+            _vulkan_renderer {vulkan_renderer} {
     }
 
     auto render() noexcept -> kstd::Result<void> override {
-
-        if(auto result = _vulkan_renderer->render([&]() {
-               _imgui_context->frame([]() {
-                   ImGui::ShowUserGuide();
-               });
-               ImGui::Render();
-               ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), *_vulkan_renderer->get_command_buffer());
-           });
-           result.is_error()) {
+        if(auto result = _vulkan_renderer->render(); result.is_error()) {
             return result;
         }
         return {};
@@ -51,14 +40,12 @@ class DefaultScreen final : public Screen {
 auto main() -> int {
     spdlog::set_level(spdlog::level::debug);
     auto window = Window {"Test window"};
-    auto vulkan_context = renderer::VulkanContext {window, "Test App", 1, 0, 0};
+    auto vulkan_context = renderer::vulkan::VulkanContext {window, "Test App", 1, 0, 0};
     auto renderer = renderer::VulkanRenderer {vulkan_context};
-    auto imgui_context = imgui::ImGuiRenderContext {renderer};
     printf("Vulkan Renderer is using the following device: %s\n", renderer.get_device().get_name().c_str());
 
     window.add_event_handler<ScreenEventHandler>();
-    window.add_event_handler<imgui::ImGuiEventHandler>();
-    window.set_screen<DefaultScreen>(&renderer, &imgui_context);
+    window.set_screen<DefaultScreen>(&renderer);
 
     window.run_loop().throw_if_error();
     return 0;

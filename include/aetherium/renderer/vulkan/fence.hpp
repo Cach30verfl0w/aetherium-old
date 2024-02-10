@@ -13,9 +13,9 @@
 //  limitations under the License.
 
 #pragma once
-#include "aetherium/renderer/vulkan_device.hpp"
+#include "aetherium/renderer/vulkan/device.hpp"
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     /**
      * This class is a safe-wrapper around the vulkan fence. This allows the developer to wait on the CPU-site for
      * GPU-site operations.

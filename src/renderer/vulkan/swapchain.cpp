@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "aetherium/renderer/vulkan_swapchain.hpp"
+#include "aetherium/renderer/vulkan/swapchain.hpp"
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     Swapchain::Swapchain() noexcept :// NOLINT
             _vulkan_device {nullptr},
             _swapchain {nullptr},
@@ -44,16 +44,16 @@ namespace aetherium::renderer {
         swapchain_create_info.minImageCount = 2;
         swapchain_create_info.imageArrayLayers = 1;
         swapchain_create_info.imageExtent = window_size;
-        VK_CHECK_EX(vkCreateSwapchainKHR(_vulkan_device->_virtual_device, &swapchain_create_info, nullptr, &_swapchain),
+        VK_CHECK_EX(vkCreateSwapchainKHR(_vulkan_device->get_virtual_device(), &swapchain_create_info, nullptr, &_swapchain),
                     "Unable to create swapchain: {}")
 
         // Get images
         uint32_t image_count = 0;
-        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, nullptr),
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->get_virtual_device(), _swapchain, &image_count, nullptr),
                     "Unable to get images: {}")
         _images.resize(image_count);
         _image_views.resize(image_count);
-        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->_virtual_device, _swapchain, &image_count, _images.data()),
+        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->get_virtual_device(), _swapchain, &image_count, _images.data()),
                     "Unable to get images: {}")
 
         // Create image views from images
@@ -73,9 +73,7 @@ namespace aetherium::renderer {
             image_view_create_info.subresourceRange.levelCount = 1;
             image_view_create_info.subresourceRange.baseArrayLayer = 0;
             image_view_create_info.subresourceRange.layerCount = 1;
-
-            //TODO: error handling
-            VK_CHECK_EX(vkCreateImageView(_vulkan_device->_virtual_device, &image_view_create_info, nullptr,
+            VK_CHECK_EX(vkCreateImageView(_vulkan_device->get_virtual_device(), &image_view_create_info, nullptr,
                                           _image_views.data() + i),
                         "Unable to create swapchain: {}")
         }
@@ -84,18 +82,18 @@ namespace aetherium::renderer {
     Swapchain::~Swapchain() noexcept {
         if(!_image_views.empty()) {
             for(auto& image_view : _image_views) {
-                vkDestroyImageView(_vulkan_device->_virtual_device, image_view, nullptr);
+                vkDestroyImageView(_vulkan_device->get_virtual_device(), image_view, nullptr);
             }
             _image_views = {};
         }
 
         if(_swapchain != nullptr) {
-            vkDestroySwapchainKHR(_vulkan_device->_virtual_device, _swapchain, nullptr);
+            vkDestroySwapchainKHR(_vulkan_device->get_virtual_device(), _swapchain, nullptr);
             _swapchain = nullptr;
         }
     }
 
-    Swapchain::Swapchain(aetherium::renderer::Swapchain&& other) noexcept :// NOLINT
+    Swapchain::Swapchain(Swapchain&& other) noexcept :// NOLINT
             _vulkan_device {other._vulkan_device},
             _swapchain {other._swapchain},
             _image_views {std::move(other._image_views)},
@@ -107,7 +105,7 @@ namespace aetherium::renderer {
     }
 
     auto Swapchain::next_image(VkSemaphore image_available_semaphore) noexcept -> kstd::Result<void> {
-        VK_CHECK(vkAcquireNextImageKHR(_vulkan_device->_virtual_device, _swapchain,
+        VK_CHECK(vkAcquireNextImageKHR(_vulkan_device->get_virtual_device(), _swapchain,
                                        std::numeric_limits<uint64_t>::max(), image_available_semaphore, VK_NULL_HANDLE,
                                        &_current_image_index),
                  "Unable to acquire next image: {}")
@@ -126,11 +124,7 @@ namespace aetherium::renderer {
         return _current_image_index;
     }
 
-    auto Swapchain::get_image_count() const noexcept -> uint32_t {
-        return _image_count;
-    }
-
-    auto Swapchain::operator=(aetherium::renderer::Swapchain&& other) noexcept -> Swapchain& {
+    auto Swapchain::operator=(Swapchain&& other) noexcept -> Swapchain& {
         _vulkan_device = other._vulkan_device;
         _swapchain = other._swapchain;
         _images = std::move(other._images);
@@ -140,5 +134,9 @@ namespace aetherium::renderer {
         other._images = {};
         other._image_views = {};
         return *this;
+    }
+
+    auto Swapchain::operator*() const noexcept -> VkSwapchainKHR {
+        return _swapchain;
     }
 }// namespace aetherium::renderer

@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include "aetherium/renderer/vulkan_fence.hpp"
+#include "aetherium/renderer/vulkan/fence.hpp"
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
 
     /**
      * This constructor creates the fence by the specified device. This fence is used to wait on the CPU-site for
@@ -25,16 +25,16 @@ namespace aetherium::renderer {
      * @author       Cedric Hammes
      * @since        09/02/2024
      */
-    VulkanFence::VulkanFence(const aetherium::renderer::VulkanDevice* device) :
+    VulkanFence::VulkanFence(const VulkanDevice* device) :
             _device {device},
             _fence_handle {nullptr} {
         VkFenceCreateInfo fence_create_info = {};
         fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        VK_CHECK_EX(vkCreateFence(_device->_virtual_device, &fence_create_info, nullptr, &_fence_handle),
+        VK_CHECK_EX(vkCreateFence(_device->get_virtual_device(), &fence_create_info, nullptr, &_fence_handle),
                     "Unable to create fence: {}")
     }
 
-    VulkanFence::VulkanFence(aetherium::renderer::VulkanFence&& other) noexcept :
+    VulkanFence::VulkanFence(VulkanFence&& other) noexcept :
             _device {other._device},
             _fence_handle {other._fence_handle} {
         other._device = nullptr;
@@ -43,7 +43,7 @@ namespace aetherium::renderer {
 
     VulkanFence::~VulkanFence() noexcept {
         if(_fence_handle != nullptr) {
-            vkDestroyFence(_device->_virtual_device, _fence_handle, nullptr);
+            vkDestroyFence(_device->get_virtual_device(), _fence_handle, nullptr);
             _fence_handle = nullptr;
         }
     }
@@ -59,12 +59,12 @@ namespace aetherium::renderer {
      * @since         09/02/2024
      */
     auto VulkanFence::wait_for(uint64_t timeout) const noexcept -> kstd::Result<void> {
-        VK_CHECK(vkWaitForFences(_device->_virtual_device, 1, &_fence_handle, true, timeout),
+        VK_CHECK(vkWaitForFences(_device->get_virtual_device(), 1, &_fence_handle, true, timeout),
                  "Unable to wait for fence: {}")
         return {};
     }
 
-    auto VulkanFence::operator=(aetherium::renderer::VulkanFence&& other) noexcept -> VulkanFence& {
+    auto VulkanFence::operator=(VulkanFence&& other) noexcept -> VulkanFence& {
         _device = other._device;
         _fence_handle = other._fence_handle;
         other._device = nullptr;

@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "aetherium/renderer/vulkan_device.hpp"
-#include "aetherium/renderer/vulkan_descriptors.hpp"
-#include "aetherium/renderer/vulkan_fence.hpp"
+#include "aetherium/renderer/vulkan/device.hpp"
+#include "aetherium/renderer/vulkan/fence.hpp"
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     /**
      * This constructor creates an empty vulkan device
      *
@@ -27,8 +26,7 @@ namespace aetherium::renderer {
             _physical_device {nullptr},
             _virtual_device {nullptr},
             _properties {},
-            _graphics_queue {nullptr},
-            _descriptor_pool {nullptr} {
+            _graphics_queue {nullptr} {
     }
 
     /**
@@ -74,33 +72,21 @@ namespace aetherium::renderer {
                     "Unable to create device: {}")
         volkLoadDevice(_virtual_device);
         vkGetDeviceQueue(_virtual_device, 0, 0, &_graphics_queue);
-
-        // Create descriptor pool
-        DescriptorSetBuilder builder {};
-        builder.add_pool_size(VK_DESCRIPTOR_TYPE_SAMPLER, 32);
-        builder.add_pool_size(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 32);
-        builder.add_pool_size(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 32);
-        builder.add_pool_size(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 32);
-        _descriptor_pool = builder.build(*this).get_or_throw();
     }
 
-    VulkanDevice::VulkanDevice(aetherium::renderer::VulkanDevice&& other) noexcept :
+    VulkanDevice::VulkanDevice(VulkanDevice&& other) noexcept :
             _physical_device {other._physical_device},
             _virtual_device {other._virtual_device},
             _properties {other._properties},
-            _graphics_queue {other._graphics_queue},
-            _descriptor_pool {other._descriptor_pool} {
+            _graphics_queue {other._graphics_queue} {
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._graphics_queue = nullptr;
-        other._descriptor_pool = nullptr;
     }
 
     VulkanDevice::~VulkanDevice() noexcept {
         if(_virtual_device != nullptr) {
-            vkDestroyDescriptorPool(_virtual_device, _descriptor_pool, nullptr);
             vkDestroyDevice(_virtual_device, nullptr);
-            _descriptor_pool = nullptr;
             _virtual_device = nullptr;
         }
     }
@@ -128,6 +114,7 @@ namespace aetherium::renderer {
 
         const auto command_buffer = std::move(command_pool->allocate_command_buffers(1).get_or_throw()[0]);
         const auto submit_fence = VulkanFence {this};
+        const auto raw_command_buffer = *command_buffer;
 
         // Perform operation
         if(const auto begin_result = command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -142,7 +129,7 @@ namespace aetherium::renderer {
         // Submit
         VkSubmitInfo submit_info {};
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submit_info.pCommandBuffers = &command_buffer._command_buffer;
+        submit_info.pCommandBuffers = &raw_command_buffer;
         submit_info.commandBufferCount = 1;
         vkQueueSubmit(_graphics_queue, 1, &submit_info, *submit_fence);
         if(const auto wait_result = submit_fence.wait_for(); wait_result.is_error()) {
@@ -163,20 +150,14 @@ namespace aetherium::renderer {
         return _graphics_queue;
     }
 
-    auto VulkanDevice::get_descriptor_pool() const noexcept -> VkDescriptorPool {
-        return _descriptor_pool;
-    }
-
-    auto VulkanDevice::operator=(aetherium::renderer::VulkanDevice&& other) noexcept -> VulkanDevice& {
+    auto VulkanDevice::operator=(VulkanDevice&& other) noexcept -> VulkanDevice& {
         _physical_device = other._physical_device;
         _virtual_device = other._virtual_device;
         _properties = other._properties;
         _graphics_queue = other._graphics_queue;
-        _descriptor_pool = other._descriptor_pool;
         other._physical_device = nullptr;
         other._virtual_device = nullptr;
         other._graphics_queue = nullptr;
-        other._descriptor_pool = nullptr;
         return *this;
     }
 
@@ -205,7 +186,7 @@ namespace aetherium::renderer {
             _command_buffer {command_buffer} {
     }
 
-    CommandBuffer::CommandBuffer(aetherium::renderer::CommandBuffer&& other) noexcept :// NOLINT
+    CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept :// NOLINT
             _command_pool {other._command_pool},
             _command_buffer {other._command_buffer} {
         other._command_pool = nullptr;
@@ -214,7 +195,7 @@ namespace aetherium::renderer {
 
     CommandBuffer::~CommandBuffer() noexcept {
         if(_command_buffer != nullptr) {
-            vkFreeCommandBuffers(_command_pool->_vulkan_device->_virtual_device, _command_pool->_command_pool, 1,
+            vkFreeCommandBuffers(_command_pool->_vulkan_device->get_virtual_device(), _command_pool->_command_pool, 1,
                                  &_command_buffer);
             _command_buffer = nullptr;
         }
@@ -235,7 +216,7 @@ namespace aetherium::renderer {
         return {};
     }
 
-    auto CommandBuffer::operator=(aetherium::renderer::CommandBuffer&& other) noexcept -> CommandBuffer& {
+    auto CommandBuffer::operator=(CommandBuffer&& other) noexcept -> CommandBuffer& {
         _command_pool = other._command_pool;
         _command_buffer = other._command_buffer;
         other._command_pool = nullptr;
@@ -273,12 +254,12 @@ namespace aetherium::renderer {
         command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         command_pool_create_info.queueFamilyIndex = 0;
-        VK_CHECK_EX(
-                vkCreateCommandPool(vulkan_device->_virtual_device, &command_pool_create_info, nullptr, &_command_pool),
-                "Unable to create command pool: {}")
+        VK_CHECK_EX(vkCreateCommandPool(vulkan_device->get_virtual_device(), &command_pool_create_info, nullptr,
+                                        &_command_pool),
+                    "Unable to create command pool: {}")
     }
 
-    CommandPool::CommandPool(aetherium::renderer::CommandPool&& other) noexcept ://NOLINT
+    CommandPool::CommandPool(CommandPool&& other) noexcept ://NOLINT
             _vulkan_device {other._vulkan_device},
             _command_pool {other._command_pool} {
         other._vulkan_device = nullptr;
@@ -287,7 +268,7 @@ namespace aetherium::renderer {
 
     CommandPool::~CommandPool() noexcept {
         if(_command_pool != nullptr) {
-            vkDestroyCommandPool(_vulkan_device->_virtual_device, _command_pool, nullptr);
+            vkDestroyCommandPool(_vulkan_device->get_virtual_device(), _command_pool, nullptr);
             _command_pool = nullptr;
         }
     }
@@ -309,7 +290,8 @@ namespace aetherium::renderer {
         allocate_info.commandPool = _command_pool;
 
         std::vector<VkCommandBuffer> raw_command_buffers {count};
-        VK_CHECK(vkAllocateCommandBuffers(_vulkan_device->_virtual_device, &allocate_info, raw_command_buffers.data()),
+        VK_CHECK(vkAllocateCommandBuffers(_vulkan_device->get_virtual_device(), &allocate_info,
+                                          raw_command_buffers.data()),
                  "Unable to allocate buffers {}")
 
         std::vector<CommandBuffer> command_buffers {};
@@ -320,11 +302,15 @@ namespace aetherium::renderer {
         return command_buffers;
     }
 
-    auto CommandPool::operator=(aetherium::renderer::CommandPool&& other) noexcept -> CommandPool& {
+    auto CommandPool::operator=(CommandPool&& other) noexcept -> CommandPool& {
         _vulkan_device = other._vulkan_device;
         _command_pool = other._command_pool;
         other._vulkan_device = nullptr;
         other._command_pool = nullptr;
         return *this;
     }
-}// namespace aetherium::renderer
+
+    auto CommandPool::operator*() const noexcept -> VkCommandPool {
+        return _command_pool;
+    }
+}// namespace aetherium::renderer::vulkan

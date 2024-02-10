@@ -20,7 +20,7 @@
 #include <kstd/safe_alloc.hpp>
 #include <type_traits>
 
-namespace aetherium::renderer {
+namespace aetherium::renderer::vulkan {
     /**
      * This class is a wrapper around the command buffer to perform actions and push them to the queue.
      *
@@ -40,15 +40,8 @@ namespace aetherium::renderer {
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
         VkQueue _graphics_queue; // TODO: Support multiple queues
-        VkDescriptorPool _descriptor_pool;
 
         public:
-        friend class VulkanRenderer;
-        friend class CommandPool;
-        friend class CommandBuffer;
-        friend class Swapchain;
-        friend class VulkanFence;
-
         /**
          * This constructor creates an empty vulkan device
          *
@@ -83,11 +76,9 @@ namespace aetherium::renderer {
          */
         template<typename F>
         [[maybe_unused]] [[nodiscard]] auto emit_command_buffer(F&& function) const noexcept -> kstd::Result<void>;
-
         [[nodiscard]] auto get_physical_device() const noexcept -> VkPhysicalDevice;
         [[nodiscard]] auto get_virtual_device() const noexcept -> VkDevice;
         [[nodiscard]] auto get_graphics_queue() const noexcept -> VkQueue;
-        [[nodiscard]] auto get_descriptor_pool() const noexcept -> VkDescriptorPool;
 
         /**
          * This function returns the name of the device by the device properties.
@@ -124,9 +115,6 @@ namespace aetherium::renderer {
         VkCommandBuffer _command_buffer;
 
         public:
-        friend class VulkanRenderer;
-        friend class VulkanDevice;
-
         /**
          * This constructor creates an empty command buffer
          *
@@ -205,5 +193,6 @@ namespace aetherium::renderer {
                 -> kstd::Result<std::vector<CommandBuffer>>;
 
         auto operator=(CommandPool&& other) noexcept -> CommandPool&;
+        auto operator*() const noexcept -> VkCommandPool;
     };
 }// namespace aetherium::renderer
