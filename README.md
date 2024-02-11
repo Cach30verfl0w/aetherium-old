@@ -2,6 +2,15 @@
 # Aetherium
 Aetherium is a Vulkan and SDL2-based Game Engine, written in C++ for my modern-day strategy game. This engine provides an automatic resource management, game state management and a Vulkan Renderer. Mainly this project is made to improve my knowledge about C++, CMake and the Vulkan API.
 
+## ToDo
+The following list is showing a list of planned tasks. The marked tasks are finished.
+
+- [ ] Wrapper Class for Queue
+- [ ] Shader Module
+- [ ] Pipeline Resource
+- [ ] Renderer System
+- [ ] Font Renderer
+- [ ] ImGui Integration
 
 ## Dependencies/Credits
 This projects contains a few dependencies to work. Below this text is an enumeration of all dependencies.
