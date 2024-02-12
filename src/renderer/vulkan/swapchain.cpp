@@ -44,7 +44,8 @@ namespace aetherium::renderer::vulkan {
         swapchain_create_info.minImageCount = 2;
         swapchain_create_info.imageArrayLayers = 1;
         swapchain_create_info.imageExtent = window_size;
-        VK_CHECK_EX(vkCreateSwapchainKHR(_vulkan_device->get_virtual_device(), &swapchain_create_info, nullptr, &_swapchain),
+        VK_CHECK_EX(vkCreateSwapchainKHR(_vulkan_device->get_virtual_device(), &swapchain_create_info, nullptr,
+                                         &_swapchain),
                     "Unable to create swapchain: {}")
 
         // Get images
@@ -53,8 +54,9 @@ namespace aetherium::renderer::vulkan {
                     "Unable to get images: {}")
         _images.resize(image_count);
         _image_views.resize(image_count);
-        VK_CHECK_EX(vkGetSwapchainImagesKHR(_vulkan_device->get_virtual_device(), _swapchain, &image_count, _images.data()),
-                    "Unable to get images: {}")
+        VK_CHECK_EX(
+                vkGetSwapchainImagesKHR(_vulkan_device->get_virtual_device(), _swapchain, &image_count, _images.data()),
+                "Unable to get images: {}")
 
         // Create image views from images
         for(auto i = 0; i < _images.size(); i++) {
@@ -139,4 +141,4 @@ namespace aetherium::renderer::vulkan {
     auto Swapchain::operator*() const noexcept -> VkSwapchainKHR {
         return _swapchain;
     }
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

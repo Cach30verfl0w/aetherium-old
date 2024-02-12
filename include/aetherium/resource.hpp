@@ -197,4 +197,4 @@ namespace aetherium {
          */
         [[nodiscard]] auto reload() noexcept -> kstd::Result<uint32_t>;
     };
-}// namespace aetherium::core
+}// namespace aetherium

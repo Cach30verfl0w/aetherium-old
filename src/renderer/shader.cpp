@@ -19,4 +19,4 @@ namespace aetherium::renderer {
         UNUSED_PARAMETER(resource_manager);
         return {};
     }
-}
+}// namespace aetherium::renderer

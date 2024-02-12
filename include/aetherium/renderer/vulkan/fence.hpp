@@ -58,4 +58,4 @@ namespace aetherium::renderer::vulkan {
         auto operator=(VulkanFence&& other) noexcept -> VulkanFence&;
         auto operator*() const noexcept -> VkFence;
     };
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

@@ -205,8 +205,8 @@ namespace aetherium::renderer::vulkan {
      * @author               Cedric Hammes
      * @since                04/02/2024
      */
-    auto VulkanContext::find_device(DeviceSearchStrategy strategy,
-                                    bool only_dedicated) const noexcept -> kstd::Result<VulkanDevice> {
+    auto VulkanContext::find_device(DeviceSearchStrategy strategy, bool only_dedicated) const noexcept
+            -> kstd::Result<VulkanDevice> {
         using namespace std::string_literals;
 
         uint32_t device_count = 0;
@@ -257,4 +257,4 @@ namespace aetherium::renderer::vulkan {
     auto VulkanContext::operator*() const noexcept -> VkInstance {
         return _instance;
     }
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

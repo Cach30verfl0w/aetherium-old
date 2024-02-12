@@ -17,7 +17,6 @@
 #include "aetherium/renderer/vulkan/context.hpp"
 #include "aetherium/renderer/vulkan/device.hpp"
 #include "aetherium/renderer/vulkan/swapchain.hpp"
-#include <kstd/tuple.hpp>
 #include <kstd/result.hpp>
 #include <kstd/tuple.hpp>
 

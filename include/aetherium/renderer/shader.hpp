@@ -22,6 +22,6 @@ namespace aetherium::renderer {
                 Resource {resource_path, runtime_type} {
         }
 
-        auto reload(const aetherium::ResourceManager &resource_manager) noexcept -> kstd::Result<void> override;
+        auto reload(const aetherium::ResourceManager& resource_manager) noexcept -> kstd::Result<void> override;
     };
 }// namespace aetherium::renderer

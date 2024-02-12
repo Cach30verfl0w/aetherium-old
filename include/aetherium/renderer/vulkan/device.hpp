@@ -39,7 +39,7 @@ namespace aetherium::renderer::vulkan {
         VkPhysicalDevice _physical_device;
         VkDevice _virtual_device;
         VkPhysicalDeviceProperties _properties {};
-        VkQueue _graphics_queue; // TODO: Support multiple queues
+        VkQueue _graphics_queue;// TODO: Support multiple queues
 
         public:
         /**
@@ -195,4 +195,4 @@ namespace aetherium::renderer::vulkan {
         auto operator=(CommandPool&& other) noexcept -> CommandPool&;
         auto operator*() const noexcept -> VkCommandPool;
     };
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

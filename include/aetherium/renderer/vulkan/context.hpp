@@ -101,4 +101,4 @@ namespace aetherium::renderer::vulkan {
         auto operator=(VulkanContext&& other) noexcept -> VulkanContext&;
         auto operator*() const noexcept -> VkInstance;
     };
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

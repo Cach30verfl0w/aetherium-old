@@ -19,9 +19,9 @@ namespace aetherium {
             _base_directory {base_directory} {
     }
 
-    auto ResourceManager::reload() noexcept -> kstd::Result<uint32_t>  {
-        for (auto& _loaded_resource : _loaded_resources) {
-            if (const auto result = _loaded_resource.second->reload(*this); result.is_error()) {
+    auto ResourceManager::reload() noexcept -> kstd::Result<uint32_t> {
+        for(auto& _loaded_resource : _loaded_resources) {
+            if(const auto result = _loaded_resource.second->reload(*this); result.is_error()) {
                 return kstd::Error {result.get_error()};
             }
         }

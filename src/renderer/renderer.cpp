@@ -121,6 +121,7 @@ namespace aetherium::renderer {
         rendering_info.layerCount = 1;
 
         vkCmdBeginRendering(*_command_buffer, &rendering_info);
+        // TODO: Render
         vkCmdEndRendering(*_command_buffer);
 
         image_memory_barrier = {};
@@ -155,6 +156,9 @@ namespace aetherium::renderer {
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = &_rendering_done_semaphore;
         VK_CHECK(vkQueueSubmit(_vulkan_device.get_graphics_queue(), 1, &submit_info, *fence), "Unable to submit: {}")
+        if(const auto wait_result = fence.wait_for(); wait_result.is_error()) {
+            return wait_result;
+        }
 
         auto current_image_index = _swapchain.current_image_index();
         auto raw_swapchain_handle = *_swapchain;
@@ -166,9 +170,6 @@ namespace aetherium::renderer {
         present_info.pSwapchains = &raw_swapchain_handle;
         present_info.pImageIndices = &current_image_index;
         VK_CHECK(vkQueuePresentKHR(_vulkan_device.get_graphics_queue(), &present_info), "Unable to present queue: {}")
-        if(const auto wait_result = fence.wait_for(); wait_result.is_error()) {
-            return wait_result;
-        }
 
         return {};
     }

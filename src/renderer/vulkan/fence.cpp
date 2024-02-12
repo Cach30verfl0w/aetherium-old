@@ -75,4 +75,4 @@ namespace aetherium::renderer::vulkan {
     auto VulkanFence::operator*() const noexcept -> VkFence {
         return _fence_handle;
     }
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan

@@ -38,4 +38,4 @@ namespace aetherium {
     auto Screen::get_name() const noexcept -> const std::string& {
         return _screen_name;
     }
-}// namespace aetherium::core
+}// namespace aetherium

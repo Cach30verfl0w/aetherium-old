@@ -13,8 +13,8 @@
 // limitations under the License.
 
 #pragma once
-#include "aetherium/renderer/vulkan/device.hpp"
 #include "aetherium/renderer/vulkan/context.hpp"
+#include "aetherium/renderer/vulkan/device.hpp"
 
 namespace aetherium::renderer::vulkan {
     class Swapchain final {
@@ -43,4 +43,4 @@ namespace aetherium::renderer::vulkan {
         auto operator=(Swapchain&& other) noexcept -> Swapchain&;
         auto operator*() const noexcept -> VkSwapchainKHR;
     };
-}// namespace aetherium::renderer
+}// namespace aetherium::renderer::vulkan
