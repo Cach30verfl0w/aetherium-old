@@ -3,6 +3,7 @@ project(aetherium LANGUAGES C CXX)
 
 # Include CMake Modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;")
+include(cmx-shaderc)
 include(cmx-bootstrap)
 include(cmx-kstd-core)
 include(cmx-kstd-reflect)
@@ -21,6 +22,7 @@ cmx_include_kstd_reflect(${PROJECT_NAME} PUBLIC)
 cmx_include_phmap(${PROJECT_NAME} PUBLIC)
 cmx_include_sdl2(${PROJECT_NAME} PUBLIC)
 cmx_include_spdlog(${PROJECT_NAME} PUBLIC)
+cmx_include_shaderc(${PROJECT_NAME} PUBLIC)
 
 cmx_add_library(${PROJECT_NAME}-static STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_include_directories(${PROJECT_NAME}-static PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -29,6 +31,7 @@ cmx_include_kstd_reflect(${PROJECT_NAME}-static PUBLIC)
 cmx_include_phmap(${PROJECT_NAME}-static PUBLIC)
 cmx_include_sdl2(${PROJECT_NAME}-static PUBLIC)
 cmx_include_spdlog(${PROJECT_NAME}-static PUBLIC)
+cmx_include_shaderc(${PROJECT_NAME}-static PUBLIC)
 
 # Include SPIR-V headers
 FetchContent_Declare(

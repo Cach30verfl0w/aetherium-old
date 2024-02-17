@@ -36,7 +36,7 @@ namespace aetherium {
 
         public:
         explicit Resource(const fs::path resource_path, const kstd::reflect::RTTI* runtime_type) noexcept ://NOLINT
-                _resource_path {std::move(resource_path)},
+                _resource_path {resource_path},
                 _runtime_type {runtime_type} {
         }
         virtual ~Resource() noexcept = default;

@@ -14,13 +14,19 @@
 
 #pragma once
 #include "aetherium/resource.hpp"
+#include <shaderc/shaderc.hpp>
 
 namespace aetherium::renderer {
     class Shader final : public Resource {
+        shaderc_compiler* _compiler;
+
         public:
         Shader(const fs::path& resource_path, const kstd::reflect::RTTI* runtime_type) :
                 Resource {resource_path, runtime_type} {
+            _compiler = shaderc_compiler_initialize();
         }
+        ~Shader() noexcept override;
+        KSTD_NO_MOVE_COPY(Shader, Shader);
 
         auto reload(const aetherium::ResourceManager& resource_manager) noexcept -> kstd::Result<void> override;
     };
